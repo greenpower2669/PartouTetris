@@ -1,0 +1,47 @@
+/* PT-027: temporary guide replaces the two textual gestures in the
+   already-reserved bottom HUD strip. LASER remains touchable. */
+#tip{min-height:84px;max-height:98px;padding:5px 8px;gap:5px;align-items:center}
+#tip .gesture{min-width:0;align-self:center;line-height:1.13;font-size:clamp(10px,2.55vw,13px)}
+#tip .hand{font-size:15px}
+#tip.guide-active .gesture{display:none!important}
+#touchGuide{
+  grid-column:1 / span 2;
+  min-width:0;height:75px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;pointer-events:none;user-select:none;
+}
+#touchGuide[hidden]{display:none!important}
+#touchGuide #guideAxisText{
+  color:#aefaff;font-weight:900;
+  font-size:clamp(10px,2.7vw,12px);
+  letter-spacing:.03em;line-height:1.18;text-align:center;
+  white-space:normal;
+  text-shadow:0 0 8px #34cbf8ba;
+}
+#touchGuide svg{
+  display:block;width:100%;height:57px;max-width:180px;overflow:visible;
+  filter:drop-shadow(0 0 3px #50cce988);
+}
+#touchGuide .guide-rail{
+  stroke:#5ce5f7;stroke-width:4.5;fill:none;
+  stroke-linejoin:round;stroke-linecap:round;
+}
+#touchGuide .guide-ghost{
+  opacity:.72;fill:#b8faff;stroke:#087da3;stroke-width:2.5;
+}
+#touchGuide #guideThumb{
+  fill:#ffe09b;stroke:#fff9e7;stroke-width:2.5;
+}
+@media(max-height:680px){
+  #tip{min-height:77px;max-height:86px}
+  #touchGuide{height:69px}
+  #touchGuide svg{height:52px}
+}
+@media(prefers-reduced-motion:reduce){
+  #touchGuide .guide-ghost{opacity:.43}
+}
+
+/* PT-039: previously the tall dedicated teaching strip masked the Earth.
+   Both ordinary instructions and the active tangent guide now fit one compact row. */
+#tip #laserButton{min-height:48px;padding:4px 2px}
+@media(max-width:360px){#tip{padding:4px 5px;gap:3px}}

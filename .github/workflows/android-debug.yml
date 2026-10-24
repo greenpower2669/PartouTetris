@@ -1,0 +1,106 @@
+name: PartouTetris Android debug
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "feature/lunar-four-fronts-*"
+    paths-ignore:
+      - "temp/**"
+      - "**/*.md"
+concurrency:
+  group: partout-build-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Create small charte preview for visual audit
+        run: |
+          python3 -m venv /tmp/pt-art-env
+          /tmp/pt-art-env/bin/pip install --quiet Pillow
+          /tmp/pt-art-env/bin/python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          source=Path("design/charte-officielle.png")
+          im=Image.open(source).convert("RGB")
+          im.thumbnail((420, 840))
+          im.save("design/charte-apercu.jpg", format="JPEG", quality=76, optimize=True)
+          print("PT-013 graphic preview", im.size)
+          PY
+      - name: Render game snapshot for graphical QA
+        shell: bash
+        run: |
+          BROWSER="$(command -v google-chrome || command -v chromium || true)"
+          if test -n "$BROWSER"; then
+            python3 - <<'PY'
+          from pathlib import Path
+          path=Path("app/src/main/assets")
+          html=(path/"index.html").read_text(encoding="utf-8")
+          html=html.replace("</body>", '<script>document.getElementById("startPanel").style.display="none";</script></body>')
+          (path/"audit-temporary.html").write_text(html,encoding="utf-8")
+          PY
+            timeout 22s "$BROWSER" --headless --no-sandbox --disable-dev-shm-usage --allow-file-access-from-files --hide-scrollbars --window-size=412,915 --force-device-scale-factor=1 --virtual-time-budget=2400 --screenshot="$PWD/design/rendu-jeu-apercu.png" "file://$PWD/app/src/main/assets/audit-temporary.html" || true
+            rm -f app/src/main/assets/audit-temporary.html
+            if test -f design/rendu-jeu-apercu.png; then
+              /tmp/pt-art-env/bin/python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          p=Path("design/rendu-jeu-apercu.png")
+          Image.open(p).convert("RGB").save("design/rendu-jeu-apercu.jpg",format="JPEG",quality=79,optimize=True)
+          p.unlink()
+          PY
+            fi
+          fi
+      - name: Test the polar engine
+        run: node --test tests/*.test.cjs
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK using runner tools
+        run: |
+          echo "Android SDK: $ANDROID_HOME"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build installable APK
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PartouTetris-v0.2.30-meteor-shower-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Publish uncompressed temporary APK on working branch
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          mkdir -p temp
+          cp app/build/outputs/apk/debug/app-debug.apk temp/PartouTetris-v0.2.30-meteor-shower-debug.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add temp/PartouTetris-v0.2.30-meteor-shower-debug.apk design/charte-apercu.jpg
+          if test -f design/rendu-jeu-apercu.jpg; then git add design/rendu-jeu-apercu.jpg; fi
+          if ! git diff --cached --quiet; then
+            git commit -m "build: temporary installable PartouTetris debug APK [skip ci]"
+            # The documentation or test branch may have advanced while Gradle ran.
+            # Rebase only the generated APK commit onto the newest remote tip.
+            # Never force-push or rewrite someone else's commits.
+            for attempt in 1 2 3; do
+              git fetch origin "${GITHUB_REF_NAME}"
+              git rebase "origin/${GITHUB_REF_NAME}"
+              if git push origin "HEAD:${GITHUB_REF_NAME}"; then exit 0; fi
+              sleep 2
+            done
+            exit 1
+          fi

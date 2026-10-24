@@ -1,0 +1,1244 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>PartouTetris — Les Pharaons de la Lune</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}html,body{padding:0;margin:0;width:100%;height:100%;overflow:hidden;background:#060d1c;color:#eaf6ff;touch-action:none;user-select:none;-webkit-user-select:none}
+#screen{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#hud{position:absolute;z-index:2;top:8px;left:10px;right:10px;display:flex;align-items:center;justify-content:space-between;pointer-events:none;gap:12px;text-shadow:0 2px 6px #000}#hud>div{border:1px solid #cda75d80;border-radius:10px;background:linear-gradient(135deg,#162b43e0,#06101de8);box-shadow:inset 0 1px #ffe2a342,0 6px 20px #0008;padding:6px 12px}
+#hud strong{color:#ffdf94;font-size:clamp(16px,2.6vw,25px)}
+#hud small{display:block;color:#a5c1d4;font-size:12px}
+#hud .right{text-align:right}
+#buttons{position:absolute;z-index:4;right:9px;bottom:9px;display:flex;gap:9px}
+button{border:1px solid #d6aa52;border-radius:10px;background:linear-gradient(160deg,#234263e8,#111d38ee 65%,#433722db);box-shadow:inset 0 1px 0 #fbdf9a66,0 3px 11px #000a;color:#fff1c9;letter-spacing:.025em;font-size:clamp(13px,2vw,18px);font-weight:700;min-height:47px;padding:8px 14px;touch-action:manipulation}
+button:active{background:#3d6177}button:focus-visible{outline:3px solid #ffdb70}
+#startPanel,#settingsPanel{position:absolute;z-index:6;left:50%;top:50%;transform:translate(-50%,-50%);background:#081c37f5;border:2px solid #dbb45b;box-shadow:0 0 36px #000d;border-radius:22px;padding:20px;max-width:min(92vw,500px);max-height:88vh;overflow:auto;text-align:center}
+#startPanel{width:min(90vw,440px)}#startPanel h1{font-size:clamp(22px,3vw,32px);color:#ffe5a4;margin:0 0 8px}
+#startPanel p{color:#cde5ef;font-size:clamp(14px,2vw,17px)}
+#start{font-size:20px;background:#226075;padding:12px 24px}
+#settingsPanel{display:none;width:min(90vw,420px);text-align:left}
+#settingsPanel h2{margin:0 0 12px;color:#ffe5a4}
+#settingsPanel label{display:block;margin:14px 0 5px;font-size:15px}
+#settingsPanel input[type=range]{width:100%;min-height:32px;accent-color:#e9bc66;touch-action:auto}
+#settingsPanel p{color:#adc4d6;font-size:13px;margin:9px 0}
+#optionsClose{margin-top:12px}
+#tip{max-width:65%;bottom:10px}
+@media(max-width:780px){#buttons{gap:4px}#buttons button{font-size:11px;padding:5px 7px;min-height:39px}#tip{font-size:10px;width:40%}}
+#tip{position:absolute;z-index:1;bottom:10px;left:10px;max-width:44%;font-size:clamp(11px,1.45vw,14px);line-height:1.35;color:#e7d5ae;text-shadow:0 2px 5px #000;pointer-events:none;background:linear-gradient(90deg,#0a213bba,#09213933);border-left:3px solid #c5a05d;border-radius:8px;padding:8px 10px}
+#alert{position:absolute;z-index:3;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;background:#061a32ee;border:2px solid #dbbc72;border-radius:22px;padding:22px 32px;min-width:260px;display:none;box-shadow:0 0 38px #020815}
+#alert h1{font-size:27px;color:#ffe0a0;margin:0 0 10px}#alert p{font-size:17px;margin:4px}
+@media(max-width:650px){#buttons{bottom:5px;right:5px;gap:5px}button{padding:6px 10px;min-height:39px}#tip{bottom:8px;font-size:11px;width:51%}}
+
+/* PT-007: a fixed portrait game cabinet. Game canvas never sits beneath controls. */
+html,body {height:100%;height:100dvh;overscroll-behavior:none}
+#screen {position:fixed;inset:0;width:100vw;height:100%;height:100dvh}
+#hud {
+  position:fixed;z-index:3;
+  left:10px;right:10px;top:max(9px,env(safe-area-inset-top));
+  align-items:stretch;gap:8px;
+}
+#hud>div {padding:8px 9px;min-width:0}
+#hud .brand {flex:1 1 66%;display:flex;align-items:center;gap:8px}
+#hud .scoreboard {flex:0 0 auto;max-width:43%;display:flex;flex-direction:column;align-items:flex-end;justify-content:center}
+.brand-copy{min-width:0;display:flex;flex-direction:column;justify-content:center}
+#hud .brand-title {font-size:clamp(15px,4.35vw,24px);letter-spacing:.015em;white-space:nowrap}
+.pyramids-mark {width:clamp(43px,12.5vw,60px);height:50px;flex:none;object-fit:contain;border-radius:10px;filter:drop-shadow(0 2px 5px #bb864eaa)}
+#hud small{font-size:clamp(10px,2.8vw,13px);line-height:1.25}
+#hud .scoreboard strong{font-size:clamp(16px,4.2vw,23px)}
+#controlDeck{
+  position:fixed;left:10px;right:10px;
+  bottom:max(10px,env(safe-area-inset-bottom));
+  z-index:4;display:flex;flex-direction:column;gap:9px;
+  max-height:40vh;
+}
+#tip{position:static;z-index:auto;bottom:auto;left:auto;max-width:100%;width:100%;font-size:clamp(11px,2.9vw,14px);padding:8px 10px;line-height:1.33;background:linear-gradient(120deg,#0c2742ef,#102a427f)}
+#buttons{position:static;bottom:auto;right:auto;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+#buttons button{font-size:clamp(12px,3.25vw,16px);min-height:48px;padding:7px 3px;width:100%;white-space:nowrap}
+#turn,#fast{grid-column:span 3}
+#audioButton,#options,#pause{grid-column:span 2}
+#startPanel,#settingsPanel{max-height:76dvh;width:min(94vw,430px)}
+#alert{width:min(88vw,390px);min-width:0}
+@media(max-width:370px){
+  #hud .brand-title{font-size:14px}
+  .pyramids-mark{width:41px}
+  #hud small{font-size:10px}
+  #buttons button{font-size:12px;min-height:44px}
+  #tip{font-size:11px}
+}
+@media(max-height:680px){
+  #hud>div{padding:5px 7px}
+  .pyramids-mark{height:36px}
+  #buttons button{min-height:38px}
+  #controlDeck{gap:5px}
+  #tip{padding:5px 9px;font-size:10px}
+}
+
+/* PT-008: Block Boost-style celebrations with no full-screen flashing. */
+#scoreBurst{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;isolation:isolate}
+#scoreBurst .fx-float{position:absolute;transform:translate(-50%,-50%);color:#fff3a6;font:900 clamp(16px,4.4vw,24px) system-ui,sans-serif;text-shadow:0 2px 2px #041327,0 0 8px #efad59;animation:scoreRise .85s ease-out both;white-space:nowrap;pointer-events:none}
+@keyframes scoreRise{0%{opacity:0;transform:translate(-50%,-10%) scale(.7)}15%{opacity:1}100%{opacity:0;transform:translate(-50%,-175%) scale(1.13)}}
+#scoreBurst .fx-banner{position:absolute;left:var(--fx-x,50%);top:var(--fx-y,45%);transform:translate(-50%,-50%);width:min(78vw,370px);min-height:66px;padding:10px 13px;background:radial-gradient(ellipse at center,#223951ed,#0d1429e5);border:2px solid #ffe5acb8;border-radius:15px;box-shadow:0 4px 24px #000c,0 0 24px #d29b4f80;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#ffefbc;font-size:clamp(18px,4.6vw,28px);line-height:1.14;text-shadow:0 2px 3px #000;animation:bannerEnter .28s ease-out both}
+#scoreBurst .fx-banner small{display:block;color:#e5f3ff;font-weight:800;font-size:clamp(15px,4vw,21px)}
+#scoreBurst .fx-banner-fireworks{border-color:#83eaf4;box-shadow:0 5px 30px #020615,0 0 20px #75d0e788}
+@keyframes bannerEnter{0%{opacity:0;transform:translate(-50%,-45%) scale(.87)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+#scoreBurst .fx-burst{position:absolute;inset:0;overflow:hidden}
+#scoreBurst .fx-burst i{position:absolute;left:var(--px);top:var(--py);width:var(--size);height:var(--size);background:var(--color);border-radius:50%;box-shadow:0 0 7px var(--color);opacity:0}
+#scoreBurst .fx-bubbles i{border:2px solid #c7faff;background:radial-gradient(circle at 30% 30%,#f7ffffaf,#77cfea33 55%,#918fe149);animation:bubbleFloat 2.7s ease-out var(--delay) both}
+#scoreBurst .fx-disco i{animation:discoPop 1.7s ease-out var(--delay) both}
+#scoreBurst .fx-fireworks i{animation:fireworksPop 2.5s ease-out var(--delay) both}
+@keyframes bubbleFloat{0%{opacity:0;transform:translateY(70px) scale(.5)}23%{opacity:.78}82%{opacity:.60}100%{opacity:0;transform:translateY(-130px) scale(1.4)}}
+@keyframes discoPop{0%{opacity:0;transform:scale(.2) translateY(14px)}20%{opacity:.9}100%{opacity:0;transform:scale(1.6) translateY(-55px)}}
+@keyframes fireworksPop{0%{opacity:0;transform:scale(.1)}15%{opacity:1}45%{opacity:.9;transform:scale(4)}100%{opacity:0;transform:scale(7)}}
+#scoreBurst .fx-mirrorball{position:absolute;left:calc(var(--fx-x) - 31px);top:calc(var(--fx-y) - var(--fx-r) - 18px);width:62px;height:62px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 28% 21%,#fefeff,#a3cff2 25%,#577bab 62%,#192b57 92%);border:2px solid #c6e8ff;box-shadow:0 0 17px #a8cbffa3;perspective:140px}
+#scoreBurst .fx-mirror-tiles{position:absolute;inset:-8px;width:84px;height:78px;background:repeating-linear-gradient(0deg,transparent 0 7px,#172c58a8 7px 8px),repeating-linear-gradient(90deg,#ffffff45 0 8px,#133b6ba3 8px 9px,#f8faffc2 9px 16px);border-radius:50%;opacity:.75;animation:mirrorYaw 2s linear infinite}
+@keyframes mirrorYaw{0%{transform:translateX(-11px) scaleX(.72)}50%{transform:translateX(9px) scaleX(1)}100%{transform:translateX(-11px) scaleX(.72)}}
+#scoreBurst .fx-spot{position:absolute;bottom:calc(50% - var(--fx-r) - 10px);width:clamp(20px,9vw,65px);height:50vh;opacity:.24;pointer-events:none;background:linear-gradient(0deg,#ffeeaf8a,#6adff833 55%,transparent);clip-path:polygon(30% 100%,70% 100%,100% 0%,0% 0%);transform-origin:bottom center;animation:spotSweep 3s ease-in-out infinite alternate}
+#scoreBurst .fx-spot:nth-last-child(5){left:12%;--spot-from:-25deg;--spot-to:-8deg}
+#scoreBurst .fx-spot:nth-last-child(4){left:29%;--spot-from:-12deg;--spot-to:12deg}
+#scoreBurst .fx-spot:nth-last-child(3){left:45%;--spot-from:0deg;--spot-to:10deg}
+#scoreBurst .fx-spot:nth-last-child(2){left:62%;--spot-from:13deg;--spot-to:-10deg}
+#scoreBurst .fx-spot:nth-last-child(1){left:80%;--spot-from:25deg;--spot-to:8deg}
+@keyframes spotSweep{from{transform:rotate(var(--spot-from))}to{transform:rotate(var(--spot-to));opacity:.13}}
+@media(prefers-reduced-motion:reduce){#scoreBurst .fx-burst{display:none}#scoreBurst .fx-banner,#scoreBurst .fx-float{animation:none}}
+#scoreBurst.fx-reduced .fx-burst,#scoreBurst.fx-reduced .fx-float{display:none}
+#scoreBurst.fx-reduced .fx-banner{animation:none}
+
+/* PT-009: celebrations launched from the enlarged Earth below the Moon. */
+#scoreBurst .fx-burst i{left:var(--earth-x);top:var(--earth-y);opacity:0}
+#scoreBurst .fx-fireworks i,#scoreBurst .fx-disco i{animation:earthSpark 2.2s ease-out var(--delay) both}
+#scoreBurst .fx-bubbles i{animation:earthBubble 2.8s ease-out var(--delay) both}
+@keyframes earthSpark{
+  0%{opacity:.9;transform:translate(0,0) scale(.4)}
+  56%{opacity:1;transform:translate(var(--tx),var(--ty)) scale(.6)}
+  85%{opacity:.8;transform:translate(var(--tx),var(--ty)) scale(2)}
+  100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(5.5)}
+}
+@keyframes earthBubble{
+  0%{opacity:.7;transform:translate(0,0) scale(.35)}
+  65%{opacity:.85;transform:translate(var(--tx),var(--ty)) scale(1)}
+  100%{opacity:0;transform:translate(var(--tx),calc(var(--ty) - 33px)) scale(1.4)}
+}
+#scoreBurst .fx-earth-beam{
+  position:absolute;left:var(--earth-x);top:var(--earth-y);
+  height:var(--beam-length);width:15px;transform-origin:top center;
+  background:linear-gradient(180deg,#89d6ff9f,#e4c3874e 55%,transparent);
+  filter:blur(2px);
+  clip-path:polygon(35% 0,65% 0,100% 100%,0 100%);
+  transform:translateX(-50%) rotate(var(--beam-angle));
+  animation:earthBeam 2.3s ease-in-out both;pointer-events:none;
+}
+@keyframes earthBeam{0%{opacity:0}24%{opacity:.66}84%{opacity:.31}100%{opacity:0}}
+#scoreBurst .fx-mirrorball{left:calc(var(--earth-x) - 31px);top:calc(var(--earth-y) - var(--earth-r) - 62px)}
+@media(prefers-reduced-motion:reduce){#scoreBurst .fx-earth-beam{display:none}}
+#scoreBurst.fx-reduced .fx-earth-beam{display:none}
+
+/* PT-010: full width score, compact high-score podium, lower point feedback. */
+#hud{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+#hud>div{flex:none;max-width:none;width:100%;min-width:0}
+#hud .brand{height:43px;min-height:0;align-items:center}
+#hud .brand-title{font-size:clamp(16px,4.3vw,22px)}
+#hud .title-meta{flex:1 1 auto;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;text-align:right;min-width:0}
+#hud .title-meta strong{font-size:clamp(13px,3.5vw,17px)}
+#hud .title-meta small{font-size:clamp(9px,2.25vw,12px)}
+#hud .pyramids-mark{width:44px;height:39px}
+#hud .scoreboard{display:block;text-align:center;padding:5px 9px 7px}
+#hud .scoreline{display:flex;align-items:center;justify-content:space-between;gap:7px;min-height:42px}
+#hud .scoreline>span:first-child{color:#f8dea6;font-size:clamp(12px,3.1vw,16px);font-weight:900;letter-spacing:.07em}
+#hud #scoreTotal{font-size:clamp(28px,8vw,44px);font-variant-numeric:tabular-nums;line-height:1;color:#fff3c6;flex:1;text-align:center;min-width:0}
+#hud #stats{font-size:clamp(9px,2.4vw,12px);color:#bddbf1;max-width:29%;text-align:right;overflow-wrap:anywhere}
+#hud .highscore-title{color:#d3b981;font-size:clamp(10px,2.7vw,12px);font-weight:800;letter-spacing:.08em;text-align:left;margin:2px 0 3px}
+#hud .highscores{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:5px;font-size:clamp(10px,2.65vw,13px);color:#f0f4ff}
+#hud .highscores>span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#31445969;border:1px solid #b4a16d48;border-radius:5px;padding:4px 5px}
+#hud .highscores>span.empty{grid-column:span 3;text-align:center}
+#pointFeed{position:fixed;left:12px;z-index:3;pointer-events:none;min-width:105px;max-width:48vw;
+ font-weight:900;font-size:clamp(13px,3.3vw,18px);color:#ffe49d;text-shadow:0 2px 5px #030713,0 0 6px #c38a45;
+ background:#0d264cc7;border-left:3px solid #e3b66c;padding:5px 9px;border-radius:6px}
+#buttons{grid-template-columns:repeat(6,minmax(0,1fr))}
+#turn,#fast,#laserButton{grid-column:span 2}
+#audioButton,#options,#pause{grid-column:span 2}
+#buttons button{font-size:clamp(11px,2.75vw,15px);min-height:47px}
+#laserButton[aria-pressed="true"]{background:linear-gradient(140deg,#236b87,#084b65);
+ border-color:#91efff;color:#e4fbff;box-shadow:0 0 12px #68c6ed66}
+#settingsPanel input[type="text"]{display:block;width:100%;min-height:48px;border:1px solid #d9b76c;
+ border-radius:9px;background:#1a3455;color:#fff4df;font-weight:700;font-size:19px;padding:9px 12px;touch-action:auto;user-select:text;-webkit-user-select:text}
+@media(max-height:650px){
+ #hud .brand{height:32px}.pyramids-mark{height:29px!important;width:36px!important}
+ #hud .scoreline{min-height:35px}#hud #scoreTotal{font-size:27px}
+ #hud .highscores>span{padding:2px 4px}
+}
+
+/* PT-013 golden pharaonic cabinet, all interactive objects independent */
+#hud .brand{border:1px solid #ebd08c;border-radius:13px;background:linear-gradient(160deg,#284766f0,#0d1930f6 63%,#312c2ce9);box-shadow:inset 0 2px #fff5c452,0 0 14px #53cbf847,0 6px 12px #0009}
+#hud .brand-title{color:#ffe0a1;background:linear-gradient(180deg,#fffad7,#f3c577 43%,#a96d32 65%,#ffe6ac);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:1000;letter-spacing:.04em;filter:drop-shadow(0 2px 1px #000e) drop-shadow(0 0 5px #e8bd7a88)}
+#hud .pyramids-mark{width:40px;height:38px;border:1px solid #ffd38a6b;border-radius:9px;box-shadow:0 0 8px #59ccef36}
+#hud .scoreboard{border-radius:13px;border-color:#ffe1a0be;background:linear-gradient(150deg,#194366f0,#0a1c36ed 63%,#292d3be8);box-shadow:inset 0 2px #ffe0a65a,0 0 15px #d2b56d2c,0 5px 12px #0008}
+#hud #scoreTotal{color:#ffe9b7;text-shadow:0 0 5px #ffd3829b,0 0 17px #e2a55867,0 2px 2px #000;letter-spacing:.01em}
+#hud .scoreline>span:first-child{color:#93ecfc;text-shadow:0 0 7px #48cfedc4}
+#hud .highscores>span{border-color:#a7b9d27f;background:linear-gradient(130deg,#3046609c,#0c2442a6)}
+#controlDeck{gap:6px}
+#tip{display:grid;grid-template-columns:1fr 1fr;gap:7px;max-width:100%;width:100%;font-size:clamp(10px,2.7vw,13px);line-height:1.25;border:1px solid #d0b07896;border-radius:12px;background:linear-gradient(140deg,#123756ed,#071b32ee);box-shadow:inset 0 1px #fbdc9864,0 0 14px #55c6ef2b;padding:7px 9px}
+#tip .gesture{display:flex;gap:6px;align-items:center;color:#e6eff9}
+#tip .hand{font-size:19px;filter:drop-shadow(0 0 4px #71dbfa8c)}
+#tip b{color:#8fecff}#tip .gesture:nth-child(2) b{color:#ffdc98}
+#buttons button{border-radius:11px;border:1px solid #e6be74c2;background:linear-gradient(155deg,#2c637be8,#112e4bee 43%,#132438ed 68%,#523f32db);box-shadow:inset 0 2px #ffffff3a,inset 0 -2px #0b1520b0,0 0 10px #72dbec2f,0 3px 8px #0009;color:#fff4df}
+#buttons button:active{background:linear-gradient(145deg,#3a8194,#204163)}
+#laserButton[aria-pressed="true"]{background:linear-gradient(155deg,#176889,#1c869c,#112f50);color:#f4ffff;border-color:#91efff;box-shadow:0 0 16px #5edcff8a}
+#startPanel,#settingsPanel,#alert{background:linear-gradient(145deg,#11324bf8,#071327fa);box-shadow:inset 0 2px #f5d58f6c,0 0 32px #53bcf63b,0 15px 45px #000c}
+#pointFeed{border:1px solid #f0d38790;border-left:3px solid #e3b66c;background:linear-gradient(90deg,#183558e2,#081d33b9)}
+@media(max-height:690px){#tip{padding:4px 6px;font-size:10px}#tip .hand{font-size:16px}#buttons button{min-height:39px}}
+
+/* PT-013 : title centered in the upper golden frame, five reference buttons. */
+#hud .brand{justify-content:center;position:relative}
+#hud .brand-copy{flex:1;align-items:center;text-align:center}
+#hud .brand-title{font-size:clamp(20px,6.1vw,31px);letter-spacing:.016em;white-space:nowrap}
+#hud .pyramids-mark{width:30px;height:30px;position:absolute;right:4px;top:4px;opacity:.88}
+#hud .title-meta{flex:0 0 auto;max-width:25%;position:absolute;left:7px;top:4px;text-align:left;align-items:flex-start}
+#hud .title-meta strong{font-size:clamp(9px,2.45vw,12px)}
+#hud .title-meta small{font-size:clamp(8px,1.95vw,10px)}
+#buttons{grid-template-columns:repeat(5,minmax(0,1fr));position:relative;gap:5px}
+#buttons #turn,#buttons #fast,#buttons #audioButton,#buttons #options,#buttons #pause{grid-column:span 1}
+#buttons button{padding:6px 2px;font-size:clamp(9px,2.2vw,12px);min-height:49px;white-space:normal}
+#buttons #laserButton{grid-column:auto;position:absolute;right:7px;bottom:calc(100% + 9px);
+  min-height:36px;width:clamp(82px,23vw,115px);font-size:12px;z-index:5;box-shadow:0 0 11px #55eaff8a}
+@media(max-height:690px){#hud .brand-title{font-size:18px}#buttons button{min-height:42px}#buttons #laserButton{min-height:30px}}
+
+/* PT-013 visual QA: full-width scoreboard and unobstructed embedded laser. */
+#hud .scoreboard{display:block;width:100%;max-width:100%;min-width:0;flex:0 0 auto}
+#hud .scoreline{width:100%}
+#hud .highscores{width:100%}
+#tip{pointer-events:auto;grid-template-columns:minmax(0,1fr) minmax(0,1fr) clamp(69px,20vw,88px);align-items:center}
+#tip .gesture{pointer-events:none;overflow-wrap:anywhere}
+#tip #laserButton{position:static;grid-column:3;width:100%;height:auto;min-height:43px;
+ font-size:clamp(10px,2.4vw,13px);padding:6px 2px;border:1px solid #75eaff;
+ background:linear-gradient(150deg,#185d83,#102d4a);box-shadow:inset 0 1px #bcf8ff8c,0 0 10px #55d9fc7c;
+ white-space:normal}
+#tip #laserButton[aria-pressed="true"]{background:linear-gradient(160deg,#228da2,#0a617e);box-shadow:0 0 16px #77f1ffbb}
+@media(max-width:360px){#tip{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 60px;gap:3px;padding:4px 5px}
+ #tip .hand{font-size:15px}#tip #laserButton{font-size:9px;min-height:41px}}
+
+/* PT-014 — Score notifications live exclusively INSIDE the existing HUD.
+   They replace the leaderboard momentarily without changing HUD height.
+   Neither ring, Moon, Earth nor moving tetrominos can be hidden by score text. */
+#hud .scoreboard{position:relative;overflow:hidden}
+#hud .highscore-title{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  min-height:19px;white-space:nowrap;overflow:hidden;
+}
+#hud .highscore-title>span:first-child{overflow:hidden;text-overflow:ellipsis;min-width:0}
+#pointFeed{
+  display:inline-block;flex:0 0 auto;position:static;inset:auto;
+  min-width:0;max-width:54%;margin:0;padding:2px 6px;z-index:auto;
+  line-height:1.1;font-size:clamp(9px,2.45vw,13px);letter-spacing:0;
+  border:1px solid #e7c582a8;border-left:2px solid #ffcf80;
+  color:#ffe3a1;text-align:right;background:linear-gradient(90deg,#1e4055e8,#11304bec);
+  box-shadow:0 0 7px #a3e7ff2a;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;
+}
+#pointFeed[hidden]{display:none!important}
+#scoreAnnouncement{
+  position:absolute;z-index:2;bottom:5px;left:8px;right:8px;
+  height:clamp(24px,3.7vh,46px);pointer-events:none;
+}
+#scoreAnnouncement:empty{display:none}
+#scoreAnnouncement .fx-banner{
+  position:static;left:auto;top:auto;transform:none;animation:none;
+  width:100%;height:100%;min-height:0;margin:0;padding:2px 7px;
+  display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;
+  justify-content:center;gap:2px 10px;
+  border:1px solid #8eefff;border-radius:7px;
+  background:linear-gradient(110deg,#102b4af6,#183b53f7 50%,#102b4af6);
+  box-shadow:0 0 12px #50dbff60,inset 0 1px #f9e5ab5e;
+  font-size:clamp(12px,3.75vw,19px);line-height:1.08;
+  font-weight:900;color:#ffefb8;text-shadow:0 1px 2px #050d1f,0 0 5px #b3dfff60;
+}
+#scoreAnnouncement .fx-banner small{
+  display:inline;max-width:100%;font-size:clamp(9px,2.5vw,12px);
+  line-height:1.06;color:#d6f5ff;white-space:nowrap;
+}
+#scoreAnnouncement .fx-banner strong{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-height:670px){
+ #hud .highscore-title{min-height:16px}
+ #scoreAnnouncement{height:clamp(23px,4.5vh,32px);bottom:3px}
+ #scoreAnnouncement .fx-banner{font-size:clamp(11px,3.2vw,15px)}
+}
+
+/* PT-015: compact leaderboard label, preserving the score row proportions. */
+#hud .highscore-title>span:first-child{font-size:clamp(9px,2.35vw,12px);letter-spacing:.015em}
+@media(max-width:375px){#pointFeed{max-width:47%;font-size:clamp(8px,2.1vw,11px)}}
+#hud #pointFeed.penalty{color:#ffb4b1;border-color:#f36c7c;
+ background:linear-gradient(100deg,#5b233bdc,#1b203de8)}
+
+#hud #laserFocusHud{position:absolute;z-index:8;left:8px;right:8px;bottom:4px;
+ display:flex;gap:7px;align-items:center;padding:4px 7px;border:1px solid #71eaff;
+ border-radius:7px;background:#102e50f6;color:#efffff;font-weight:900;
+ font-size:clamp(10px,2.55vw,13px);box-shadow:0 0 13px #62ddffab;pointer-events:none}
+#hud #laserFocusHud[hidden]{display:none!important}
+#hud #laserFocusText{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hud .laser-progress{height:6px;flex:0 0 25%;background:#0a1e37;border:1px solid #8cb9d9;border-radius:8px;overflow:hidden}
+#hud #laserFocusBar{display:block;height:100%;width:0%;background:linear-gradient(90deg,#26d5ff,#ffe6a7)}
+</style>
+<link rel="stylesheet" href="hud-pt016.css">
+<link rel="stylesheet" href="joystick-guide.css">
+<link rel="stylesheet" href="comic-feedback.css">
+</head><body>
+<canvas id="screen" aria-label="Lune et quatre secteurs de jeu"></canvas>
+<div id="scoreBurst" aria-hidden="true"></div>
+<div id="hud">
+  <div class="brand">
+    <img class="pyramids-mark" src="brand-icon.webp" alt="Icône officielle PartouTetris" draggable="false">
+    <div class="brand-minos" aria-hidden="true">
+      <span class="mino mino-cyan"><i></i><i></i><i></i><i></i></span>
+      <span class="mino mino-gold"><i></i><i></i><i></i><i></i></span>
+      <span class="mino mino-purple"><i></i><i></i><i></i><i></i></span>
+      <span class="mino mino-ice"><i></i><i></i><i></i><i></i></span>
+    </div>
+    <div class="brand-copy"><strong class="brand-title">PARTOUTETRIS</strong></div>
+    <div class="right title-meta"><strong id="level">Niveau 1</strong><small id="rings">Couronnes 0 · 4 fronts</small></div>
+  </div>
+  <div class="scoreboard">
+    <div class="scoreline"><span>SCORE</span><strong id="scoreTotal">0</strong><span id="stats">Tous3nKamion · Record 0</span></div>
+    <div class="highscore-title"><span>MEILLEUR SCORE DE PHARAONITE</span><strong id="bestScoreValue" aria-label="Meilleur score de Pharaonite">0</strong><span id="pointFeed" role="status" aria-live="polite" hidden></span></div>
+    <div id="highscores" class="highscores" aria-label="Classement des trois meilleurs scores des Pharaonites">Aucun score enregistré</div>
+    <div id="scoreAnnouncement" role="status" aria-live="polite" aria-label="Événement de score"></div>
+    <div id="laserFocusHud" role="status" aria-live="polite" hidden><span id="laserFocusText"></span><span class="laser-progress"><i id="laserFocusBar"></i></span></div>
+  </div>
+</div>
+<div id="controlDeck">
+<div id="comicFeed" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+<div id="tip"><span id="touchGuide" hidden role="img" aria-label="Joystick pédagogique : l'axe cyan indique dans quelle direction glisser le doigt pour déplacer la pièce"><strong id="guideAxisText">↔ GAUCHE–DROITE</strong><svg viewBox="0 0 210 120" aria-hidden="true" focusable="false"><circle cx="105" cy="60" r="34" stroke="#9ccee0" stroke-width="1.5" stroke-dasharray="4 6" fill="none" opacity=".5"/><circle cx="105" cy="60" r="4" fill="#ddfaff" opacity=".8"/><path id="guideTrack" class="guide-rail" d="M 53 60 L 157 60"/><g id="guideGhost" class="guide-ghost" transform="translate(105 60)"><circle r="10"/><path d="M -2 8 L -2 20 Q 0 24 4 20 L 7 11" stroke="#b8faff" stroke-width="4" stroke-linecap="round" fill="none"/></g><circle id="guideThumb" cx="105" cy="60" r="7"/></svg></span><span class="gesture"><span class="hand" aria-hidden="true">✋</span><span><b>Droite</b> : tenir et guider</span></span><span class="gesture"><span class="hand" aria-hidden="true">☝️</span><span><b>Gauche</b> : tap tourner · tenir ×10</span></span><button id="laserButton" aria-label="LASER : toucher une brique posée pour verrouiller la visée, puis laisser tirer 1,3 seconde contre un malus" aria-pressed="false">⚡ LASER</button></div>
+<div id="buttons"><button id="turn" aria-label="Tourner la pièce sélectionnée">↻ TOURNER</button><button id="fast" aria-label="Accélérer la pièce sélectionnée dix fois">⇣ ×10</button><button id="audioButton" aria-label="Activer ou couper le son">🔊 SON</button><button id="options" aria-label="Réglages de vitesse et de volume">⚙ RÉGLAGES</button><button id="pause" aria-label="Mettre en pause">Ⅱ PAUSE</button></div>
+</div>
+<div id="startPanel" role="dialog" aria-label="Début du jeu">
+<h1>🌙 Les Pharaons de la Lune</h1><p>Laser : touche brièvement une pièce volante pour la pivoter ; sur une brique posée, touche pour verrouiller le focus, puis laisse tirer 1,3 seconde même sans maintenir le doigt ; malus croissant. Appuie sur LASER puis touche un débris en chute pour le faire pivoter ou le repousser latéralement. Ses flammes viennent de l’espace.</p><p>✋ Main droite : attrape et guide une pièce. ☝️ Main gauche : tapote pour pivoter, ou garde appuyé pour une descente ×10. Dans l’espace : rotation uniquement ; guidage possible dès la zone lunaire.</p><p>Débris incandescents dans l'espace, puis petites voiles de stabilisation uniquement près de la Lune. Satellites-pyramides dorés et lasers cyan.</p><p>Vitesse réglable et musique officielle PartouTetris.</p>
+<button id="start" aria-label="Commencer une nouvelle partie">▶ JOUER</button>
+<p>Ta partie se sauvegarde automatiquement.</p></div>
+<div id="resumePopup" class="decision-dialog" role="dialog" aria-modal="true" aria-labelledby="resumeQuestion" hidden>
+  <h2 id="resumeQuestion">Voulez-vous continuer là où vous en étiez ?</h2>
+  <p id="resumeDetails"></p>
+  <div class="decision-actions">
+    <button id="resumeYes" autofocus>✓ OUI, REPRENDRE</button>
+    <button id="resumeNo">NON</button>
+  </div>
+</div>
+<div id="resumeConfirm" class="decision-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmDiscardQuestion" hidden>
+  <h2 id="confirmDiscardQuestion">Vous êtes sûr ?</h2>
+  <p>Abandonner cette partie sauvegardée et recommencer à zéro ? Les records du Hall of Fame seront conservés.</p>
+  <div class="decision-actions">
+    <button id="resumeBack">↩ GARDER MA PARTIE</button>
+    <button id="resumeDiscard">OUI, NOUVELLE PARTIE</button>
+  </div>
+</div>
+<div id="hallOfFame" class="decision-dialog hall-of-fame" role="dialog" aria-modal="true" aria-labelledby="hallTitle" hidden>
+  <h2 id="hallTitle">🏆 HALL OF FAME</h2>
+  <p>Les exploits des Pharaonites, ici et dans le monde.</p>
+  <div id="hallTabs" role="group" aria-label="Classement">
+    <button id="hallLocal" aria-pressed="true">📱 LOCAL</button>
+    <button id="hallWorld" aria-pressed="false">🌍 MONDIAL</button>
+  </div>
+  <p id="hallStatus" role="status" aria-live="polite"></p>
+  <button id="hallHistoryMode" type="button">VOIR TOUT L’HISTORIQUE</button>
+  <ol id="hallEntries" aria-label="Classement des Pharaonites"></ol>
+  <button id="hallRefresh" type="button" hidden>↻ ACTUALISER MONDIAL</button>
+  <button id="hallClose">FERMER</button>
+</div>
+<div id="settingsPanel" role="dialog" aria-label="Réglages du jeu">
+<h2>⚙ Réglages</h2>
+<label for="nickname">Pseudo du joueur</label>
+<input id="nickname" name="nickname" type="text" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Tous3nKamion" aria-label="Pseudo affiché dans le classement">
+<p>Ton pseudo apparaît avec les meilleurs scores enregistrés sur ce téléphone.</p>
+<label for="speed">Temps initial par étage : <strong id="speedValue">8,0 s</strong></label>
+<input id="speed" type="range" min="2" max="8" step="0.5" value="8" aria-label="Secondes initiales par étage, 8 est le temps maximal">
+<p>Départ à 8 secondes par étage. La vitesse augmente uniquement quand une couronne disparaît. Plus vite = bonus de points au carré. Réglage manuel possible ici.</p>
+<label for="musicVolume">Musique : <strong id="musicValue">33 %</strong></label>
+<input id="musicVolume" type="range" min="0" max="100" step="5" value="33">
+<label for="fxVolume">Effets sonores : <strong id="fxValue">75 %</strong></label>
+<input id="fxVolume" type="range" min="0" max="100" step="5" value="75">
+<label for="reducedCelebrations"><input id="reducedCelebrations" type="checkbox"> Effets visuels doux (moins de mouvement)</label>
+<label for="experimentalTouch"><input id="experimentalTouch" type="checkbox"> 🎯 Guidage tangentiel projeté (essai)</label>
+<p>Le doigt peut rester loin de la pièce : repère virtuel derrière la Lune, axe de déplacement tangent, transitions souples. Décoche pour comparer avec l'ancien contrôle.</p>
+<button id="hallFromSettings" type="button">🏆 HALL OF FAME</button>
+<button id="optionsClose">VALIDER ✓</button>
+</div>
+<div id="alert"><h1>La Lune déborde !</h1><p id="finalScore"></p><p>La Terre a besoin de toi.</p><button id="again">REJOUER</button><button id="hallFromEnd">🏆 HALL OF FAME</button></div>
+<script src="engine.js"></script>
+<script src="audio.js"></script>
+<script src="touch.js"></script>
+<script src="tangent-control.js"></script>
+<script src="joystick-guide.js"></script>
+<script src="grip-vectors.js"></script>
+<script src="ghost-moon-guide.js"></script>
+<script src="landing-guide.js"></script>
+<script src="tangent-landing-guide.js"></script>
+<script src="boost-sources.js"></script>
+<script src="visuals.js"></script>
+<script src="arrival.js"></script>
+<script src="laser-aim.js"></script>
+<script src="earth-events.js"></script>
+<script src="earth-shower.js"></script>
+<script src="comic-feedback.js"></script>
+<script src="layout.js"></script>
+<script src="celebrations.js"></script>
+<script src="leaderboard.js"></script>
+<script src="global-hall.js"></script>
+<script src="session.js"></script>
+<script src="resume-flow.js"></script>
+<script>
+(function(){
+"use strict";
+const {Game,SECTORS,RINGS,LANES,COLORS,FORM_NAMES,TYPE_COLORS,cellsOf,mod,SPACE_STEPS,SPACE_INTERVAL_FACTOR,LOCKED_LASER_HOLD_MS}=window.PartouEngine;
+const canvas=document.getElementById("screen"),ctx=canvas.getContext("2d");
+const art=new window.PartouVisuals.Artist(ctx);
+// PT-016 — authentic coded HUD. The crated blue moon replaces the O of the
+// visual title; an accessible complete text remains attached to the heading.
+function mountMoonWordmark(){
+  const title=document.querySelector(".brand-title");
+  if(!title||title.dataset.orbMounted)return;
+  const original=title.textContent;
+  if(original!=="PARTOUTETRIS")return;
+  const moon=document.createElement("span");
+  moon.className="brand-moon";moon.setAttribute("aria-hidden","true");
+  const pyramid=document.createElement("span");
+  pyramid.className="brand-pyramid";pyramid.setAttribute("aria-hidden","true");
+  title.setAttribute("aria-label",original);
+  title.replaceChildren(document.createTextNode("P"),pyramid,
+    document.createTextNode("RT"),moon,document.createTextNode("UTETRIS"));
+  title.dataset.orbMounted="true";
+}
+mountMoonWordmark();
+
+const ui={score:document.getElementById("scoreTotal"),stats:document.getElementById("stats"),level:document.getElementById("level"),rings:document.getElementById("rings"),alert:document.getElementById("alert"),final:document.getElementById("finalScore"),pause:document.getElementById("pause")};
+const game=new Game(),sound=new window.PartouAudio.Soundtrack();
+let storage=null;try{storage=window.localStorage}catch(e){}
+const leaderboard=new window.PartouScores.Leaderboard(storage);
+const globalHall=new window.PartouGlobalHall.GlobalHall(storage,window.PartouHall||null);
+window.partouHallReply=(id,status,body)=>globalHall.receive(id,status,body);
+let hallScope="local",hallAllHistory=false;
+const nickname=document.getElementById("nickname");
+nickname.value=leaderboard.name;
+const pointFeed=document.getElementById("pointFeed");
+const podium=document.getElementById("highscores");
+const bestScoreValue=document.getElementById("bestScoreValue");
+function renderPodium(){
+  podium.replaceChildren();
+  const top=leaderboard.top(3), medals=["🥇","🥈","🥉"];
+  if(!top.length){
+    const empty=document.createElement("span");empty.className="empty";
+    empty.textContent="À toi d'ouvrir le classement !";
+    podium.appendChild(empty);return;
+  }
+  top.forEach((item,i)=>{
+    const node=document.createElement("span");
+    node.title=item.name+" : "+item.score+" points";
+    node.textContent=medals[i]+" "+item.name+" "+item.score.toLocaleString("fr-FR");
+    podium.appendChild(node);
+  });
+}
+renderPodium();
+let scoreSaved=false,laserMode=false,lastLaserAt=0,laserTarget=null;
+const laserFocusHud=document.getElementById("laserFocusHud"),
+  laserFocusText=document.getElementById("laserFocusText"),
+  laserFocusBar=document.getElementById("laserFocusBar");
+let laserTipUntil=0;
+function resetLaserFocus(){
+ laserTarget=null;laserFocusHud.hidden=true;laserFocusBar.style.width="0%";
+}
+function laserMessage(text,duration=1300){
+ laserFocusText.textContent=text;laserFocusHud.hidden=false;
+ laserFocusBar.style.width="0%";laserTipUntil=performance.now()+duration;
+}
+let laserShots=[];
+const earthEvents=new window.PartouEarthEvents.EarthEvents();
+const meteorShower=new window.PartouMeteorShower.MeteorShower();
+const laserButton=document.getElementById("laserButton");
+function updateLaserMode(){
+  laserButton.setAttribute("aria-pressed",String(laserMode));
+  laserButton.textContent=laserMode?"⚡ ACTIF":"⚡ LASER";
+  if(!laserMode)resetLaserFocus();
+  else laserMessage("⚡ BRIQUE, PIÈCE OU DÉBRIS TERRE",2100);
+}
+const reducedCelebrations=document.getElementById("reducedCelebrations");
+const festival=new window.PartouFestival.Festival(document.getElementById("scoreBurst"),{
+  reduced:()=>reducedCelebrations.checked,
+  bannerHost:document.getElementById("scoreAnnouncement"),
+  gainHost:pointFeed
+});
+const comic=new window.PartouComic.ComicFeedback(document.getElementById("comicFeed"),{
+  reduced:()=>reducedCelebrations.checked
+});
+let started=false,settingsOpen=false,pausedBeforeSettings=false;
+const storageKey="partouteris-audio-and-speed-v1";
+function readConfig(){
+  try{return JSON.parse(localStorage.getItem(storageKey)||"{}")||{};}catch(e){return {};}
+}
+const settings=readConfig();
+const experimentalTouch=document.getElementById("experimentalTouch");
+experimentalTouch.checked=settings.tangentControl!==false; // ON for the PT-026 trial, reversible
+reducedCelebrations.checked=settings.reducedCelebrations!==undefined?!!settings.reducedCelebrations:!!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+const speed=document.getElementById("speed"),musicVolume=document.getElementById("musicVolume"),fxVolume=document.getElementById("fxVolume");
+// PT-024: ignore old speed preferences when beginning a new session.
+ // A resumed run keeps its precise speed from its existing checkpoint.
+ speed.value=game.setBaseFallSeconds(8);
+if(Number.isFinite(+settings.music)&&settings.music!==undefined)musicVolume.value=Math.round(+settings.music*100);
+if(Number.isFinite(+settings.effects)&&settings.effects!==undefined)fxVolume.value=Math.round(+settings.effects*100);
+sound.setVolumes(+musicVolume.value/100,+fxVolume.value/100);
+if(settings.enabled===false)sound.setEnabled(false);
+function storeSettings(){
+  try{localStorage.setItem(storageKey,JSON.stringify({
+    speed:game.baseFallSeconds,music:sound.musicVolume,effects:sound.effectsVolume,enabled:sound.enabled,reducedCelebrations:reducedCelebrations.checked,tangentControl:experimentalTouch.checked
+  }));}catch(e){}
+}
+function updateAudioLabel(){
+  document.getElementById("audioButton").textContent=sound.enabled?"🔊 SON":"🔇 MUET";
+}
+function updateSliders(){
+  document.getElementById("speedValue").textContent=game.baseFallSeconds.toFixed(1).replace(".",",")+" s";
+  document.getElementById("musicValue").textContent=Math.round(sound.musicVolume*100)+" %";
+  document.getElementById("fxValue").textContent=Math.round(sound.effectsVolume*100)+" %";
+}
+updateSliders();updateAudioLabel();game.paused=true;
+let record=0;try{record=+(localStorage.getItem("partouteris-record")||0)}catch(e){}
+let W=1,H=1,dpr=1,cx=0,cy=0,scale=1,inner=0,outer=0,stepR=0,earth=null;
+let selected=0,lastTime=0,previousCleared=0;
+const session=window.PartouSession;
+let lastSessionSave=0;
+const savedSession=session.read(storage);
+const canResume=!!savedSession;
+const resumeDecision=new window.PartouResumeFlow.ResumeDecision(canResume);
+const startPanel=document.getElementById("startPanel");
+const resumePopup=document.getElementById("resumePopup");
+const resumeConfirm=document.getElementById("resumeConfirm");
+const hallOfFame=document.getElementById("hallOfFame");
+const hallEntries=document.getElementById("hallEntries");
+let hallPreviousPause=true;
+function showResumeQuestion(){
+  resumeConfirm.hidden=true;
+  resumePopup.hidden=false;
+  document.getElementById("resumeYes").focus();
+}
+if(canResume){
+  // Do NOT restore or delete anything before the player chooses. A mistaken
+  // first "Non" is not allowed to alter persistent or in-memory state.
+  startPanel.style.display="none";
+  document.getElementById("resumeDetails").textContent=
+    savedSession.score.toLocaleString("fr-FR")+" points · "+
+    savedSession.cleared+" couronnes.";
+  showResumeQuestion();
+}
+function renderHallOfFame(){
+  hallEntries.replaceChildren();
+  const local=hallScope==="local";
+  document.getElementById("hallLocal").setAttribute("aria-pressed",String(local));
+  document.getElementById("hallWorld").setAttribute("aria-pressed",String(!local));
+  const status=document.getElementById("hallStatus");
+  const toggle=document.getElementById("hallHistoryMode");
+  const refresh=document.getElementById("hallRefresh");
+  toggle.hidden=!local;
+  toggle.textContent=hallAllHistory?"AFFICHER TOP 10":"VOIR TOUT L’HISTORIQUE";
+  refresh.hidden=local;
+  let top;
+  if(local){
+    top=hallAllHistory?leaderboard.all(10000):leaderboard.top(10);
+    status.textContent="Classement local enregistré sur cet appareil · "+
+      leaderboard.history.length+" partie(s) archivées.";
+  }else{
+    top=globalHall.top(100);
+    const labels={
+      non_configure:"Synchronisation mondiale indisponible dans cet environnement.",
+      non_verifie:"Serveur mondial en cours de vérification.",
+      en_ligne:"Classement mondial reçu du serveur commun.",
+      hors_ligne:"Hors ligne : derniers scores mondiaux conservés, si disponibles.",
+      en_attente:"Le serveur ne confirme pas encore la synchronisation.",
+      serveur_indisponible:"PartouTetris n'est pas encore activé sur le serveur commun."
+    };
+    status.textContent=(labels[globalHall.status]||"Synchronisation en attente.")+
+      (globalHall.pending.length?" · "+globalHall.pending.length+
+        " score(s) en attente d'envoi.":"");
+  }
+  if(!top.length){
+    const empty=document.createElement("li");
+    empty.className="hall-empty";
+    empty.textContent=local?"À toi d'ouvrir le classement !":
+      "Aucun score mondial confirmé pour le moment.";
+    hallEntries.appendChild(empty);
+  }
+  const medals=["🥇","🥈","🥉"];
+  top.forEach((entry,index)=>{
+    const item=document.createElement("li");
+    const label=document.createElement("span");
+    const body=document.createElement("span");
+    const name=document.createElement("strong");
+    const detail=document.createElement("small");
+    const points=document.createElement("strong");
+    label.textContent=(medals[index]||"#"+(index+1))+" ";
+    name.textContent=entry.name;
+    const extras=[];
+    if(entry.crowns>0)extras.push(entry.crowns+" couronne(s)");
+    if(entry.at>1000000000000)extras.push(new Date(entry.at).toLocaleDateString("fr-FR"));
+    detail.textContent=extras.join(" · ");
+    points.textContent=entry.score.toLocaleString("fr-FR")+" pts";
+    body.className="hall-player";body.append(name,detail);
+    item.append(label,body,points);
+    hallEntries.appendChild(item);
+  });
+}
+globalHall.onChange=()=>{
+  if(!hallOfFame.hidden&&hallScope==="world")renderHallOfFame();
+};
+function openHallOfFame(){
+  hallScope="local";hallAllHistory=false;
+  renderHallOfFame();
+  hallPreviousPause=game.paused;
+  if(started&&!game.over){
+    hands.reset();ghostMoonGuide.hide();boostSources.clear();fastPointerId=null;
+    resetLaserFocus();game.paused=true;persistSession();
+  }
+  hallOfFame.hidden=false;
+  document.getElementById("hallClose").focus();
+}
+function closeHallOfFame(){
+  hallOfFame.hidden=true;
+  if(started&&!game.over)game.paused=hallPreviousPause;
+  lastTime=0;
+}
+function persistSession(){
+  if(!started||game.over)return false;
+  return session.save(storage,game,selected);
+}
+// Native Android Activity.onPause requests a flush before possible WebView kill.
+window.partouFlushSession=()=>persistSession();
+function startPlay(newGame=false){
+  if(newGame){
+    session.clear(storage);game.reset();game.setBaseFallSeconds(8);
+    speed.value=8;updateSliders();storeSettings();selected=0;
+    scoreSaved=false;previousCleared=0;ui.alert.style.display="none";
+  }
+  hands.reset();ghostMoonGuide.hide();boostSources.clear();fastPointerId=null;
+  resetLaserFocus();laserMode=false;updateLaserMode();
+  started=true;game.paused=false;lastTime=0;lastSessionSave=performance.now();
+  earthEvents.reset(game.seconds); // transient event, never alter saved runs
+  meteorShower.reset(game.seconds); // rare, independent shower scenery
+  comic.reset();
+  startPanel.style.display="none";
+  persistSession();
+  if(sound.enabled){
+    const ok=sound.start();
+    if(!ok)document.getElementById("audioButton").textContent="⚠ AUDIO";
+  }
+}
+const stars=[];
+let seed=91;function random(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}
+for(let i=0;i<125;i++)stars.push({x:random(),y:random(),r:0.3+random()*1.6,a:0.25+random()*0.65});
+function resize(){
+  dpr=Math.min(window.devicePixelRatio||1,2);W=window.innerWidth;H=window.innerHeight;
+  canvas.width=Math.max(1,Math.round(W*dpr));canvas.height=Math.max(1,Math.round(H*dpr));
+  canvas.style.width=W+"px";canvas.style.height=H+"px";ctx.setTransform(dpr,0,0,dpr,0,0);
+  const headerBottom=document.getElementById("hud").getBoundingClientRect().bottom;
+  const controlsTop=document.getElementById("controlDeck").getBoundingClientRect().top;
+  ({cx,cy,scale,inner,outer,stepR,earth}=window.PartouLayout.computePortraitLayout({width:W,height:H,headerBottom,controlsTop}));
+  festival.position({cx,cy,outer,inner,stepR,earth});
+  // PT-042: comic feedback is an absolute child of the control deck.
+  // It automatically stays above the buttons, even if the guide height changes.
+  // PT-014: old score celebrations still live inside the HUD.
+}
+window.addEventListener("resize",resize);resize();
+const TAU=Math.PI*2;
+function rad(a){return -Math.PI/2+a*TAU/SECTORS}
+function point(angle,r){return [cx+Math.cos(angle)*r,cy+Math.sin(angle)*r]}
+function wedge(s,r,color,opacity=1,stroke=true,glow=0,colorMix=0){
+  art.cell({cx,cy,inner,stepR,sector:s,ring:r,color,opacity,stroke,glow,colorMix});
+}
+function backdrop(){
+  art.backdrop({W,H,cx,cy,inner,outer,stepR,sectors:SECTORS,flash:game.flash,earth,
+    time:performance.now()/1000,reduced:reducedCelebrations.checked});
+}
+function moon(){art.moon({cx,cy,inner});}
+function projectedLanding(piece){
+  if(!piece)return null;
+  return window.PartouLandingGuide.resolveLandingReference({
+    game,piece,cellsOf,moonCenter:{x:cx,y:cy},
+    inner,stepR,sectors:SECTORS
+  });
+}
+// PT-033: animate the actual minos and landing silhouette instead of rings.
+function selectionLuminance(time){
+  if(reducedCelebrations.checked)return 0.65;
+  return 0.5+0.5*Math.sin(time/420);
+}
+function pieces(){
+  const pulse=selectionLuminance(performance.now());
+  const mix=reducedCelebrations.checked?.5:(.5+.5*Math.sin(performance.now()/650));
+  for(const p of game.pieces){
+    if(!p||p.radius>=RINGS)continue;
+    const ghost=game.ghost(p);
+    const active=p.lane===selected;
+    ctx.save();
+    if(active){
+      ctx.shadowColor=TYPE_COLORS[p.type];
+      ctx.shadowBlur=5+5*pulse;
+    }
+    for(const [a,r] of cellsOf(p,p.angle,ghost,p.rot))
+      wedge(a,r,TYPE_COLORS[p.type],active?.42+.2*pulse:.20,false,active?.12+.88*pulse:0,active?mix:0);
+    ctx.restore();
+  }
+  for(const p of game.pieces){
+    if(!p)continue;
+    if(p.radius>=RINGS){
+      // Space: stable direction, but rotation remains available. The group
+      // moves from Earth's atmosphere toward the selected lunar entry front.
+      const stepFraction=Math.min(1,game.fall[p.lane]/(game.fallInterval()*SPACE_INTERVAL_FACTOR));
+      const spot=window.PartouArrival.projectEarthApproach({
+        earth,cx,cy,outer,sector:p.angle,lane:p.lane,radial:p.radius,
+        rings:RINGS,spaceSteps:SPACE_STEPS,stepFraction
+      });
+      const blocks=cellsOf(p);
+      const relative=blocks.map(([a,r])=>[mod(a-p.angle+SECTORS/2,SECTORS)-SECTORS/2,r-p.radius]);
+      ctx.save();
+      if(p.lane===selected){ctx.shadowColor=TYPE_COLORS[p.type];ctx.shadowBlur=6+6*pulse;}
+      art.spacePiece({position:spot,cells:relative,color:TYPE_COLORS[p.type],
+        time:performance.now()/1000,reduced:reducedCelebrations.checked,size:stepR});
+      if(p.lane===selected){
+        // PT-038: neon cyan/or aura surrounds the actual space minos.
+        // Screen blend and wider blur are visible before the parachute phase.
+        const halo=mix>.5?"#ffd36a":"#38eaff";
+        ctx.save();ctx.globalCompositeOperation="screen";
+        ctx.globalAlpha=.24+.52*pulse;
+        ctx.shadowColor=halo;ctx.shadowBlur=18+26*pulse;
+        ctx.filter="brightness("+(1.15+1.2*pulse)+")";
+        art.spacePiece({position:spot,cells:relative,color:halo,
+          time:performance.now()/1000,reduced:true,size:stepR});
+        ctx.restore();
+      }
+      ctx.restore();
+    }else{
+      art.incoming({cx,cy,inner,stepR,angle:p.angle,radial:p.radius,
+        time:performance.now()/1000,reduced:reducedCelebrations.checked});
+      const burning=(p.ignitedUntil||0)>game.seconds;
+      if(window.PartouVisuals.shouldDeployCanopy(p.radius,RINGS)&&!burning)
+        art.canopy({cx,cy,inner,stepR,angle:p.angle,radial:p.radius,
+          color:TYPE_COLORS[p.type],reduced:reducedCelebrations.checked});
+      if(burning){
+        // Animated fiery exhaust accompanies a burning parachute piece.
+        art.incoming({cx,cy,inner,stepR,angle:p.angle,radial:p.radius,
+          time:performance.now()/260,reduced:false});
+        ctx.save();ctx.globalCompositeOperation="screen";
+        ctx.shadowColor="#ff8e28";ctx.shadowBlur=15+8*pulse;
+        for(const [a,r] of cellsOf(p))wedge(a,r,"#ff9c36",.28+.25*pulse,false);
+        ctx.restore();
+      }
+      ctx.save();
+      if(p.lane===selected){ctx.shadowColor=TYPE_COLORS[p.type];ctx.shadowBlur=6+7*pulse;}
+      for(const [a,r] of cellsOf(p))
+        wedge(a,r,TYPE_COLORS[p.type],p.lane===selected?.94+.06*pulse:.94,true,p.lane===selected?.12+.88*pulse:0,p.lane===selected?mix:0);
+      ctx.restore();
+    }
+  }
+  // PT-033: selected piece and ghost glow directly; no occluding yellow ring.
+}
+function overlays(){
+  art.energy({cx,cy,inner,outer,flash:game.flash,time:performance.now()/1000});
+  ctx.textAlign="center";ctx.font="700 12px system-ui";ctx.fillStyle="#f3d69c";
+  const labels=["N","E","S","O"];
+  for(let i=0;i<4;i++){
+    const [x,y]=point(rad(i*12),outer+Math.min(13,scale*.045));
+    ctx.fillText(labels[i],x,y);
+  }
+}
+function updateHud(){
+  if(game.score>record){record=game.score;try{localStorage.setItem("partouteris-record",String(record))}catch(e){}}
+  ui.score.textContent=game.score.toLocaleString("fr-FR");
+  const best=Math.max(record,leaderboard.best());
+  ui.stats.textContent=leaderboard.name+" · Record "+best.toLocaleString("fr-FR");
+  bestScoreValue.textContent=best.toLocaleString("fr-FR");
+  ui.level.textContent="Niveau "+game.level;
+  ui.rings.textContent="Couronnes "+game.cleared+" · "+
+    game.fallInterval().toFixed(1).replace(".",",")+" s"+
+    (game.combo>1?" · ×"+game.combo:"");
+  ui.pause.textContent=game.paused?"▶ REPRENDRE":"Ⅱ PAUSE";
+  if(game.over){
+    if(!scoreSaved){
+      const runId=window.PartouScores.newRunId();
+      const recorded=leaderboard.add(game.score,Date.now(),{
+        runId,crowns:game.cleared,level:game.level,
+        elapsedSeconds:game.seconds,appVersion:"0.2.12"
+      });
+      if(recorded){
+        globalHall.queue(leaderboard.session(runId));
+        renderPodium();
+      }
+      scoreSaved=true;
+    }
+    ui.final.textContent=leaderboard.name+" · "+game.score.toLocaleString("fr-FR")+" points · Couronnes : "+game.cleared;
+    ui.alert.style.display="block";
+  }
+}
+function frame(time){
+  const dt=lastTime?Math.min(.1,(time-lastTime)/1000):0;lastTime=time;
+  if(!game.paused&&!game.over)hands.tick(time);
+  const before=game.cleared;game.step(dt);
+  // PT-039: new Earth arrivals are independent of the four gameplay lanes.
+  // Using game.seconds makes events stop when the game is paused.
+  if(started&&!game.paused&&!game.over){
+    const earthTick=[...earthEvents.tick(game.seconds,{W,earth}),
+      ...meteorShower.tick(game.seconds,{W,earth})];
+    for(const ev of earthTick){
+      if(ev.type==="earth-shower"){
+        // One comic ALERT, no score mutation. Alternate French phrases
+        // via the PT-041 anti-repeat phrase deck.
+        comic.enqueue({type:"info",reason:"meteor-shower",count:ev.count});
+        sound.cue("laser");
+        laserMessage("☄️ ALERTE MÉTÉORITIQUE · "+ev.count+" BLOCS",1500);
+      }
+      if(ev.type==="earth-impact"){
+        if(ev.reason==="player"){
+          // The three cyan beams have been visible since target lock. Only
+          // now: explosion + real reward + comic bubble, exactly once.
+          game.award(ev.bonus,"earth-defense",{
+            form:ev.form,speedSquare:ev.speedSquare
+          });
+          sound.cue("destroy");
+          laserMessage("🌍 DÉFENSE TERRE · +"+ev.bonus.toLocaleString("fr-FR")+" POINTS",1500);
+        }else{
+          sound.cue(ev.reason==="satellite"?"laser":"destroy");
+          if(ev.reason==="satellite")laserMessage("🛰️ SATELLITES · INTERCEPTION",1100);
+          else laserMessage("💥 IMPACT DÉBRIS SPATIAL",1100);
+        }
+      }
+    }
+  }
+  for(const ev of game.drainEvents()){
+    if(ev.type==="lock"){
+      const placed=ev.placedCounts,drawn=ev.spawnCounts;
+      console.info("[PT020][POSE] #"+ev.placement+
+        " forme="+ev.form+" chiralité="+ev.chirality+
+        " rotation="+(ev.rotation*90)+"deg"+
+        " front="+(ev.lane+1)+" secteur="+ev.angle+
+        " couronne="+ev.radius+" couleur="+ev.color+
+        " posées={L:"+placed[2]+",J:"+placed[3]+",S:"+placed[5]+",Z:"+placed[4]+"}"+
+        " tirées={L:"+drawn[2]+",J:"+drawn[3]+",S:"+drawn[5]+",Z:"+drawn[4]+"}");
+    }
+    if(ev.type==="points"&&ev.reason==="placement"){
+      console.info("[PT024][SCORE] pose front="+(ev.lane+1)+
+        " taille="+ev.size+" profondeur="+ev.centerBonus+
+        " chaîneΔ²="+ev.continuityUnits+" ponts="+ev.bridges+
+        " géodésie="+ev.geodesy+" vitesse×="+ev.speedMultiplier+
+        " gain="+ev.gained);
+    }else if(ev.type==="ring"){
+      console.info("[PT024][SCORE] couronne(s)="+ev.count+
+        " palier="+ev.level+" attente="+ev.fallInterval.toFixed(2)+
+        "s vitesse×="+ev.speedMultiplier.toFixed(2));
+    }
+    festival.handle(ev);
+    // One vivid but short BD panel for ALL scored gains and every malus.
+    // Extra speed modules reflect the actually earned multiplier.
+    comic.enqueue(ev);
+    if(ev.type==="milestone")sound.cue("milestone");
+    else if(ev.type!=="points"&&ev.type!=="destroy")sound.cue(ev.type,ev.count);
+  }
+  if(laserTarget){
+    if(!laserMode||game.paused||game.over||
+       game.board[laserTarget.ring]?.[laserTarget.sector]===-1){
+      resetLaserFocus();
+    }else{
+      const fraction=Math.max(0,Math.min(1,(time-laserTarget.startedAt)/LOCKED_LASER_HOLD_MS));
+      laserFocusBar.style.width=Math.round(fraction*100)+"%";
+      if(fraction>=1){
+        const target=laserTarget;resetLaserFocus();lastLaserAt=time;
+        const hit=game.destroyLockedCell(target.sector,target.ring);
+        if(hit){
+          laserShots.push({to:target.to,at:time});
+          sound.cue("destroy");
+          if(navigator.vibrate)navigator.vibrate([22,34,55]);
+          laserMessage("✓ BRIQUE CORRIGÉE · −"+hit.charged.toLocaleString("fr-FR"),1700);
+        }
+      }
+    }
+  }else if(!laserFocusHud.hidden&&laserTipUntil&&time>laserTipUntil){
+    laserFocusHud.hidden=true;laserTipUntil=0;
+  }
+  sound.tick(game.paused||game.over,game.level);
+  comic.update(game.seconds,game.paused||settingsOpen||!started);
+  if(game.cleared!==before){previousCleared=game.cleared;if(navigator.vibrate)navigator.vibrate(40);}
+  backdrop();
+  for(let r=0;r<RINGS;r++)for(let a=0;a<SECTORS;a++)if(game.board[r][a]!==-1){
+    const type=game.boardTypes[r][a];
+    wedge(a,r,type>=0?TYPE_COLORS[type]:COLORS[game.board[r][a]],.88,true);
+  }
+  moon();
+  // PT-032: after grabbing the *real* falling piece, guide from the
+  // centroid of its actual future landing footprint, recalculated every
+  // frame as the ghost changes. Render behind minos, never change physics.
+  {
+    const grip=hands.grip;
+    if(grip&&hands.experimental&&!laserMode&&!game.paused&&!game.over&&!settingsOpen){
+      const piece=game.pieces[grip.lane];
+      if(piece&&piece.radius<RINGS){
+        const target=projectedLanding(piece);
+        ghostMoonGuide.render(ctx,{grip,angle:target?.angle??piece.angle,
+          sectors:SECTORS,moonCenter:{x:cx,y:cy},target,time});
+        // PT-035: move the local tangent cue onto the projected Moon pivot.
+        // Keep original cyan finger arrows and the bottom tutorial intact.
+        if(target&&ghostMoonGuide.anchor){
+          window.PartouTangentLanding.drawLocalTangent(ctx,{
+            anchor:ghostMoonGuide.anchor,target,
+            finger:{x:grip.lastX,y:grip.lastY},
+            angle:target.angle,sectors:SECTORS,stepR,time,
+            reducedMotion:reducedCelebrations.checked
+          });
+          // PT-033: the landing minos themselves glow; no circular reticle.
+        }
+      }else ghostMoonGuide.hide();
+    }else ghostMoonGuide.hide();
+  }
+  pieces();overlays();
+  laserShots=laserShots.filter(shot=>time-shot.at<480);
+  // Three Earth defence satellites independently converge on each target.
+  const emitters=art.satellites({earth,W,H,time:time/1000,reduced:reducedCelebrations.checked});
+  earthEvents.draw(ctx,{now:game.seconds,reduced:reducedCelebrations.checked,
+    emitters,speedRatio:Math.max(1,8/game.fallInterval())});
+  meteorShower.draw(ctx,{now:game.seconds,reduced:reducedCelebrations.checked,
+    emitters,speedRatio:Math.max(1,8/game.fallInterval())});
+  for(const shot of laserShots)for(const from of emitters){
+     const elapsed=time-shot.at;
+     if(elapsed<112)art.charge({from,progress:elapsed/112,reduced:reducedCelebrations.checked});
+     if(elapsed>=52)art.laser({from,to:shot.to,life:1-(elapsed-52)/428,reduced:reducedCelebrations.checked});
+   }
+  if(laserTarget){
+    const progress=Math.max(0,Math.min(1,(time-laserTarget.startedAt)/LOCKED_LASER_HOLD_MS));
+    for(const from of emitters)
+      art.laserDrill({from,to:laserTarget.to,progress,reduced:reducedCelebrations.checked});
+  }
+  if(game.over)session.clear(storage);
+  else if(started&&time-lastSessionSave>=850){
+    persistSession();lastSessionSave=time;
+  }
+  updateTouchGuide(time);
+  // PT-028: visual-only vectors near the first finger, perpendicular to
+  // the centre-to-piece radius. They never intercept or change input events.
+  const grip=hands.grip;
+  if(grip&&hands.experimental&&!laserMode&&!game.paused&&!game.over&&!settingsOpen){
+    const piece=game.pieces[grip.lane];
+    if(piece&&piece.radius<RINGS){
+      window.PartouGripVectors.drawGripVectors(ctx,{
+        x:grip.lastX,y:grip.lastY,
+        angle:projectedLanding(piece)?.angle??piece.angle,sectors:SECTORS,
+        time,reducedMotion:reducedCelebrations.checked
+      });
+    }
+  }
+  updateHud();requestAnimationFrame(frame);
+}
+function fromEvent(e){
+  const b=canvas.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;
+  const dx=x-cx,dy=y-cy,theta=Math.atan2(dy,dx)+Math.PI/2;
+  return {x,y,angle:mod(theta/TAU*SECTORS,SECTORS),distance:Math.hypot(dx,dy)};
+}
+function nearestLane(angle){
+  let winner=0,best=Infinity;
+  for(let i=0;i<LANES;i++){
+    const p=game.pieces[i];if(!p)continue;
+    const diff=Math.abs(mod(angle-p.angle+SECTORS/2,SECTORS)-SECTORS/2);
+    if(diff<best){best=diff;winner=i;}
+  }
+  return winner;
+}
+const boostSources=new window.PartouBoostSources.BoostSources(
+  (lane,enabled)=>game.boost(lane,enabled),
+  ({source,lane,active})=>console.info(
+    "[PT021][BOOST] "+(active?"ON":"OFF")+" source="+source+" front="+(lane+1))
+);
+const ghostMoonGuide=new window.PartouGhostMoon.GhostMoonGuide();
+const joystick=new window.PartouJoystickGuide.Guide(
+  document.getElementById("touchGuide"),document.getElementById("tip"));
+const hands=new window.PartouTouch.TwoHandControls({
+  sectorCount:SECTORS,
+  experimental:experimentalTouch.checked,
+  projectDrag:(lane,from,to)=>{
+    const p=game.pieces[lane];
+    if(!p)return 0;
+    // Reference PT-032: use the projected *landing* point for the
+    // observer frame, not the flying height. Sector/tangent and response
+    // keep the proven PT-026/028 physics and sensitivity unchanged.
+    const landing=projectedLanding(p);
+    const radius=landing?Math.hypot(landing.x-cx,landing.y-cy):
+      inner+(Math.min(RINGS,p.radius)+.36)*stepR+
+      Math.max(0,p.radius-RINGS)*stepR*.58;
+    const projection=window.PartouTangent.projectDrag({
+      from,to,angle:landing?.angle??p.angle,orbitRadius:radius,
+      centerX:cx,centerY:cy,screenWidth:W,sectorCount:SECTORS
+    });
+    if(p.radius<RINGS)joystick.movement(projection.projectedPixels,to.time);
+    return projection.sectorDelta;
+  },
+  chooseLane:nearestLane,
+  onSelect:lane=>{selected=lane;},
+  onMove:(lane,direction)=>{if(game.shift(lane,direction))sound.cue("move");},
+  onRotate:lane=>{game.rotate(lane);},
+  onBoost:(lane,value)=>{boostSources.set("touch",lane,value);}
+});
+function updateTouchGuide(time=performance.now()){
+  const grip=hands.grip;
+  const visible=!!(grip&&hands.experimental&&!laserMode&&
+    !game.paused&&!game.over&&!settingsOpen);
+  const piece=visible?game.pieces[grip.lane]:null;
+  if(!piece){joystick.hide();return;}
+  joystick.show(grip.lane);
+  const landing=projectedLanding(piece);
+  joystick.render(landing?.angle??piece.angle,time,{
+    reducedMotion:reducedCelebrations.checked,
+    inSpace:piece.radius>=RINGS,
+    landing:!!landing
+  });
+}
+function touchInfo(e){
+  const p=fromEvent(e);
+  return {id:e.pointerId,x:p.x,y:p.y,angle:p.angle,distance:p.distance,time:e.timeStamp};
+}
+function nearestLaserPiece(pos){
+  let nearest=-1,distance=Infinity;
+  for(const p of game.pieces){
+    if(!p)continue;
+    let x,y;
+    if(p.radius>=RINGS){
+      const spot=window.PartouArrival.projectEarthApproach({
+        earth,cx,cy,outer,sector:p.angle,lane:p.lane,radial:p.radius,
+        rings:RINGS,spaceSteps:SPACE_STEPS,
+        stepFraction:Math.min(1,game.fall[p.lane]/(game.fallInterval()*SPACE_INTERVAL_FACTOR))
+      });
+      if(!spot)continue;
+      ({x,y}=spot);
+    }else{
+      const r=inner+Math.min(p.radius,10)*stepR+Math.max(0,p.radius-10)*stepR*.58+stepR*.36;
+      [x,y]=point(rad(p.angle+.5),r);
+    }
+    const d=Math.hypot(pos.x-x,pos.y-y);
+    if(d<distance){distance=d;nearest=p.lane;}
+  }
+  return distance<=Math.max(29,Math.min(47,scale*.25))?nearest:-1;
+}
+function lockedLaserCell(pos){
+ return window.PartouLaserAim.findLocked({
+  board:game.board,x:pos.x,y:pos.y,cx,cy,inner,stepR,sectors:SECTORS
+ });
+}
+canvas.addEventListener("pointerdown",e=>{
+  e.preventDefault();if(game.over||game.paused)return;
+  if(sound.enabled)sound.start();
+  if(laserMode){
+    const now=performance.now(),pos=fromEvent(e);
+    // Player laser intercepts the independently moving Earth-bound block.
+    // Score is determined by permanent gravity only, not the x10 finger drop.
+    if(now-lastLaserAt>=420){
+      // Only one coordinated tri-laser lock at any given time,
+      // even when several objects approach Earth in the same rain.
+      const interception=(earthEvents.pending||meteorShower.locked!==null)?null:
+        meteorShower.hit(pos.x,pos.y,game.seconds,game.fallInterval())||
+        earthEvents.hit(pos.x,pos.y,game.seconds,game.fallInterval());
+      if(interception){
+        // The target remains until all three beams have crossed it (320 ms).
+        // Awarding and the comic popup happen only on the impact event.
+        resetLaserFocus();lastLaserAt=now;
+        sound.cue("laser");
+        laserMessage("⚡ TRIPLE LASER · VERROUILLAGE",620);
+        if(navigator.vibrate)navigator.vibrate([16,28,42]);
+        return;
+      }
+    }
+    const fixed=lockedLaserCell(pos);
+    if(fixed){
+      if(laserTarget?.sector!==fixed.sector||laserTarget?.ring!==fixed.ring){
+        laserTarget={...fixed,startedAt:now};laserTipUntil=0;
+        laserFocusText.textContent="⚡ FOCUS · MALUS −"+
+          game.destructionPenalty(fixed.ring).toLocaleString("fr-FR");
+        laserFocusBar.style.width="0%";laserFocusHud.hidden=false;
+        if(navigator.vibrate)navigator.vibrate(15);
+      }
+      return;
+    }
+    if(laserTarget){resetLaserFocus();laserMessage("⚡ FOCUS ANNULÉ",1000);return;}
+    if(now-lastLaserAt<420)return;
+    const lane=nearestLaserPiece(pos);
+    if(lane<0)return;
+    const piece=game.pieces[lane];
+    const canIgnite=piece.radius<RINGS;
+    const shot=game.laser(lane,pos.angle);
+    const ignited=canIgnite&&game.ignite(lane);
+    if(!shot&&!ignited)return;
+    selected=lane;lastLaserAt=now;
+    const p=game.pieces[lane];
+    const radius=inner+Math.min(p.radius,10)*stepR+Math.max(0,p.radius-10)*stepR*.58+stepR*.36;
+    const [x,y]=point(rad(p.angle+.5),radius);
+    laserShots.push({to:{x,y},at:now});
+    if(ignited){
+      sound.cue("laser");laserMessage("🔥 PARACHUTE EN FEU · DESCENTE ×3",1500);
+      if(navigator.vibrate)navigator.vibrate([24,20,35]);
+    }
+    return;
+  }
+  if(hands.down(touchInfo(e)))canvas.setPointerCapture(e.pointerId);
+  updateTouchGuide();
+});
+canvas.addEventListener("pointermove",e=>{
+  if(game.over||game.paused)return;
+  e.preventDefault();
+  if(laserMode)return; // focus holds steady independently of finger drift
+  hands.move(touchInfo(e));
+  updateTouchGuide();
+});
+canvas.addEventListener("pointerup",e=>{
+  e.preventDefault();
+  if(laserMode)return; // focus persists after pointerup/pointercancel
+  hands.up(touchInfo(e));
+  if(!hands.grip)ghostMoonGuide.hide();
+  updateTouchGuide();
+});
+canvas.addEventListener("pointercancel",e=>{
+  e.preventDefault();
+  if(laserMode)return; // focus persists after pointerup/pointercancel
+  hands.cancel(touchInfo(e));
+  if(!hands.grip)ghostMoonGuide.hide();
+  updateTouchGuide();
+});
+window.addEventListener("blur",()=>{hands.reset();ghostMoonGuide.hide();boostSources.clear();fastPointerId=null;resetLaserFocus();});
+laserButton.addEventListener("click",()=>{
+  if(!started||game.over)return;
+  hands.reset();ghostMoonGuide.hide();boostSources.clear();fastPointerId=null;resetLaserFocus();laserMode=!laserMode;updateLaserMode();
+});
+updateLaserMode();
+nickname.addEventListener("change",()=>{
+  nickname.value=leaderboard.setName(nickname.value);
+  renderPodium();
+});
+document.getElementById("turn").addEventListener("click",()=>{if(sound.enabled)sound.start();game.rotate(selected);for(const ev of game.drainEvents())sound.cue(ev.type,ev.count);});
+document.getElementById("pause").addEventListener("click",()=>{
+  if(!started||game.over||settingsOpen)return;
+  if(sound.enabled)sound.start();
+  hands.reset();ghostMoonGuide.hide();boostSources.clear();fastPointerId=null;resetLaserFocus();game.paused=!game.paused;lastTime=0;
+  persistSession();
+});
+document.getElementById("start").addEventListener("click",()=>startPlay(true));
+document.getElementById("resumeYes").addEventListener("click",()=>{
+  if(resumeDecision.resume()!=="resume")return;
+  if(!session.restore(game,savedSession)){
+    // Invalid checkpoint: never silently run a partially restored board.
+    resumePopup.hidden=true;startPanel.style.display="block";
+    session.clear(storage);
+    return;
+  }
+  selected=savedSession.selected;
+  speed.value=game.baseFallSeconds;updateSliders();
+  resumePopup.hidden=true;
+  startPlay(false);
+});
+document.getElementById("resumeNo").addEventListener("click",()=>{
+  if(resumeDecision.reject()!=="confirm")return;
+  resumePopup.hidden=true;
+  resumeConfirm.hidden=false;
+  document.getElementById("resumeBack").focus();
+});
+document.getElementById("resumeBack").addEventListener("click",()=>{
+  if(resumeDecision.back()==="question")showResumeQuestion();
+});
+document.getElementById("resumeDiscard").addEventListener("click",()=>{
+  if(resumeDecision.discard()!=="new")return;
+  // This is the ONLY irreversible branch of the two-step "Non" flow.
+  session.clear(storage);
+  resumeConfirm.hidden=true;
+  startPlay(true);
+});
+document.getElementById("hallFromSettings").addEventListener("click",()=>openHallOfFame());
+document.getElementById("hallFromEnd").addEventListener("click",()=>openHallOfFame());
+document.getElementById("hallClose").addEventListener("click",()=>closeHallOfFame());
+document.getElementById("hallLocal").addEventListener("click",()=>{
+  hallScope="local";renderHallOfFame();
+});
+document.getElementById("hallWorld").addEventListener("click",()=>{
+  hallScope="world";renderHallOfFame();globalHall.refresh();
+});
+document.getElementById("hallHistoryMode").addEventListener("click",()=>{
+  hallAllHistory=!hallAllHistory;renderHallOfFame();
+});
+document.getElementById("hallRefresh").addEventListener("click",()=>{
+  globalHall.refresh();globalHall.uploadNext();renderHallOfFame();
+});
+window.addEventListener("online",()=>{
+  globalHall.refresh();globalHall.uploadNext();
+});
+document.getElementById("audioButton").addEventListener("click",()=>{
+  sound.setEnabled(!sound.enabled);
+  if(sound.enabled)sound.start();
+  updateAudioLabel();storeSettings();
+});
+document.getElementById("options").addEventListener("click",()=>{
+  if(settingsOpen)return;
+  hands.reset();ghostMoonGuide.hide();boostSources.clear();fastPointerId=null;resetLaserFocus();settingsOpen=true;pausedBeforeSettings=game.paused;game.paused=true;
+  document.getElementById("settingsPanel").style.display="block";
+});
+document.getElementById("optionsClose").addEventListener("click",()=>{
+  nickname.value=leaderboard.setName(nickname.value);
+  renderPodium();
+  document.getElementById("settingsPanel").style.display="none";
+  settingsOpen=false;game.paused=started?pausedBeforeSettings:true;lastTime=0;
+  if(sound.enabled)sound.start();
+  storeSettings();
+});
+speed.addEventListener("input",()=>{game.setBaseFallSeconds(+speed.value);updateSliders();storeSettings();});
+musicVolume.addEventListener("input",()=>{
+  sound.setVolumes(+musicVolume.value/100,+fxVolume.value/100);updateSliders();storeSettings();
+});
+fxVolume.addEventListener("input",()=>{
+  sound.setVolumes(+musicVolume.value/100,+fxVolume.value/100);updateSliders();storeSettings();
+});
+experimentalTouch.addEventListener("change",()=>{
+  hands.reset();ghostMoonGuide.hide();joystick.hide(); // no control-mode jump during an active grab
+  hands.experimental=experimentalTouch.checked;
+  console.info("[PT026][TANGENT] "+(hands.experimental?"ON":"OFF"));
+  storeSettings();
+});
+reducedCelebrations.addEventListener("change",()=>{
+  festival.root.classList.toggle("fx-reduced",reducedCelebrations.checked);storeSettings();
+});
+festival.root.classList.toggle("fx-reduced",reducedCelebrations.checked);
+const fast=document.getElementById("fast");
+let fastPointerId=null;
+fast.addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  if(game.over||game.paused||fastPointerId!==null)return;
+  fastPointerId=e.pointerId;
+  boostSources.set("button",selected,true);
+  fast.setPointerCapture(e.pointerId);
+});
+for(const name of ["pointerup","pointercancel","lostpointercapture"]){
+  fast.addEventListener(name,e=>{
+    if(fastPointerId!==e.pointerId)return;
+    fastPointerId=null;
+    boostSources.set("button",0,false);
+  });
+}
+document.getElementById("again").addEventListener("click",()=>{
+  session.clear(storage);
+  hands.reset();ghostMoonGuide.hide();boostSources.clear();fastPointerId=null;festival.reset();game.reset();scoreSaved=false;laserMode=false;resetLaserFocus();laserShots=[];updateLaserMode();
+  ui.alert.style.display="none";selected=0;previousCleared=0;lastTime=0;
+  if(sound.enabled)sound.start();
+});
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){
+    persistSession();
+    hands.reset();ghostMoonGuide.hide();boostSources.clear();fastPointerId=null;resetLaserFocus();
+    game.paused=true;lastTime=0;
+  }
+});
+window.addEventListener("pagehide",()=>persistSession());
+window.addEventListener("beforeunload",()=>persistSession());
+window.addEventListener("keydown",e=>{
+ if(e.code==="Space"&&started&&!settingsOpen){e.preventDefault();hands.reset();ghostMoonGuide.hide();boostSources.clear();fastPointerId=null;game.paused=!game.paused;persistSession();}
+ if(e.key==="ArrowLeft"&&game.shift(selected,-1))sound.cue("move");
+ if(e.key==="ArrowRight"&&game.shift(selected,1))sound.cue("move");
+ if(e.key==="ArrowUp")game.rotate(selected);
+ if(e.key==="ArrowDown"&&!boostSources.has("keyboard"))boostSources.set("keyboard",selected,true);
+ if(["1","2","3","4"].includes(e.key))selected=Number(e.key)-1;
+});
+window.addEventListener("keyup",e=>{if(e.key==="ArrowDown")boostSources.set("keyboard",0,false);});
+requestAnimationFrame(frame);
+})();
+</script></body></html>

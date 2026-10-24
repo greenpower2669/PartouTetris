@@ -1,0 +1,137 @@
+/* PT-042: short non-interactive comics above controls, not the lunar board.
+   Absolutely anchored to the control deck, so guide height never breaks it. */
+#comicFeed{
+ position:absolute;z-index:5;
+ top:auto;bottom:calc(100% + 8px);
+ left:50%;right:auto;transform:translateX(-50%);
+ width:min(60vw,280px);max-height:min(27vh,175px);
+ pointer-events:none;
+ filter:drop-shadow(0 2px 7px #020916b8);
+}
+#comicFeed[hidden]{display:none!important}
+#comicFeed:has(.comic-malus){left:50%;right:auto}
+#comicFeed .comic-card{
+ --tone:#67dfff;--flash:#ffc759;
+ --panel-start:rgba(14,47,77,.43);
+ --panel-end:rgba(5,25,48,.31);
+ position:relative;isolation:isolate;
+ box-sizing:border-box;overflow:hidden;
+ padding:8px 11px 9px;
+ color:#f7ffff;
+ text-shadow:0 1px 2px #010b1a,0 0 5px #020a16;
+ --comic-peak:1.10;
+ transform-origin:50% 80%;
+ animation:comicPunch .36s cubic-bezier(.2,.78,.25,1) both,
+           comicFade .28s ease-in 1.35s both;
+}
+/* Normal information: polished, quiet, ROUNDED border. */
+#comicFeed .comic-smooth{
+ border:1.5px solid color-mix(in srgb,var(--flash) 76%,transparent);
+ border-radius:15px;
+ background:linear-gradient(145deg,var(--panel-start),var(--panel-end));
+ box-shadow:inset 0 1px #bbf4ff3f,0 0 9px #42c0f558;
+}
+/* Alert / wow / interception / crown: real JAGGED cartoon contour.
+   The fine opaque outer shell and inset translucent pane create a
+   clean sawtooth edge, not the old huge opaque rectangle. */
+#comicFeed .comic-burst{
+ --comic-peak:1.24;
+ border:0;border-radius:0;
+ padding:11px 14px 12px;
+ clip-path:polygon(
+  0% 9%,7% 9%,11% 0%,22% 6%,34% 0%,48% 6%,
+  60% 0%,72% 6%,84% 1%,91% 11%,100% 6%,
+  95% 24%,100% 40%,95% 54%,100% 73%,
+  92% 84%,94% 99%,79% 94%,65% 100%,
+  49% 94%,32% 100%,20% 94%,5% 100%,
+  8% 83%,0% 72%,5% 52%,0% 34%,5% 20%
+ );
+ background:var(--flash);
+}
+#comicFeed .comic-burst::before{
+ content:"";position:absolute;inset:2px;z-index:-1;
+ background:linear-gradient(145deg,var(--panel-start),var(--panel-end));
+ clip-path:inherit;
+ pointer-events:none;
+}
+#comicFeed .comic-card::after{
+ content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+ background:radial-gradient(ellipse at 76% 13%,#67e6ff30,transparent 73%);
+}
+#comicFeed .comic-earth{--tone:#4cecff;--flash:#ffd46c}
+#comicFeed .comic-ring{--tone:#ffe688;--flash:#94eaff}
+#comicFeed .comic-bridge{--tone:#acffbb;--flash:#ffd676}
+#comicFeed .comic-placement{--tone:#75eeff;--flash:#b1dfff}
+#comicFeed .comic-malus{
+ --tone:#ffc1bb;--flash:#ff535a;
+ --panel-start:rgba(99,20,48,.45);
+ --panel-end:rgba(41,10,31,.33);
+ transform-origin:50% 80%;
+}
+#comicFeed .comic-heading{
+ display:block;color:var(--flash);
+ font-size:clamp(14px,3.65vw,21px);line-height:1.06;font-weight:1000;
+ letter-spacing:-.025em;-webkit-text-stroke:.25px #181029;
+ text-shadow:0 2px #30192b,0 0 7px var(--tone);
+}
+#comicFeed .comic-phrase{
+ display:block;color:#f1faff;font-size:clamp(10px,2.45vw,13px);
+ font-weight:850;line-height:1.17;margin:4px 0 3px;
+}
+#comicFeed .comic-amount{
+ display:block;color:var(--tone);
+ font-size:clamp(16px,4.1vw,25px);font-weight:1000;
+ line-height:1.07;letter-spacing:-.02em;
+ text-shadow:0 1px #03172e,0 0 9px var(--tone);
+ white-space:nowrap;
+}
+#comicFeed .comic-stages{
+ display:flex;align-items:center;justify-content:flex-start;
+ flex-wrap:wrap;gap:2px 3px;margin-top:4px;
+}
+#comicFeed .comic-speed-title{
+ flex-basis:100%;font-size:clamp(8px,1.75vw,10px);
+ color:#dff3ff;letter-spacing:.07em;font-weight:850;
+}
+#comicFeed .comic-stage{
+ font-style:normal;white-space:nowrap;display:inline-block;
+ font-size:clamp(9px,2.15vw,11px);font-weight:1000;
+ color:#08162c;background:linear-gradient(130deg,#d9ffff,#63dfff 65%,#ffe7a4);
+ border-radius:4px;box-shadow:0 0 6px #70d9ff79;
+ padding:1px 3px;opacity:0;
+ animation:comicStep .68s cubic-bezier(.22,1.35,.32,1)
+   calc(.17s + var(--stage-index)*.16s) both;
+}
+@keyframes comicPunch{
+  0%{opacity:0;transform:translateY(6px) scale(.90)}
+  24%{opacity:1;transform:translateY(-2px) scale(var(--comic-peak))}
+  48%{opacity:1;transform:translateY(0) scale(1.035)}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes comicFade{0%{opacity:1}100%{opacity:0;transform:scale(.94) translateY(-3px)}}
+@keyframes comicStep{
+ 0%{opacity:0;transform:scale(.4)}
+ 28%{opacity:1;transform:scale(1.15)}
+ 72%{opacity:1;transform:scale(1)}
+ 100%{opacity:0;transform:scale(1.25) translateY(-7px)}
+}
+#comicFeed.comic-paused *,#comicFeed.comic-paused *::before,#comicFeed.comic-paused *::after{
+ animation-play-state:paused!important;
+}
+#comicFeed .comic-still{animation:none!important}
+#comicFeed .comic-still .comic-stage{animation:none!important;opacity:1}
+@media(max-height:700px){
+ #comicFeed{width:min(58vw,255px);max-height:23vh}
+ #comicFeed .comic-card{padding:5px 8px 6px}
+ #comicFeed .comic-heading{font-size:clamp(12px,3vw,18px)}
+ #comicFeed .comic-amount{font-size:clamp(14px,3.7vw,20px)}
+}
+@media(max-width:360px){
+ #comicFeed{width:61vw}
+ #comicFeed .comic-phrase{font-size:10px}
+ #comicFeed .comic-stage{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ #comicFeed .comic-card,#comicFeed .comic-stage{animation:none!important}
+ #comicFeed .comic-stage{opacity:1}
+}
