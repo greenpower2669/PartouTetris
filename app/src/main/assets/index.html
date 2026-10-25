@@ -281,6 +281,7 @@ html,body {height:100%;height:100dvh;overscroll-behavior:none}
 <link rel="stylesheet" href="hud-pt016.css">
 <link rel="stylesheet" href="joystick-guide.css">
 <link rel="stylesheet" href="comic-feedback.css">
+<link rel="stylesheet" href="title-pt044.css">
 </head><body>
 <canvas id="screen" aria-label="Lune et quatre secteurs de jeu"></canvas>
 <div id="scoreBurst" aria-hidden="true"></div>
@@ -411,7 +412,10 @@ mountMoonWordmark();
 (function installSuppliedWordmark(){
   const image=document.getElementById("brandWordmarkImage");
   if(!image)return;
-  const ready=()=>{if(image.naturalWidth>0)image.classList.add("ready");};
+  const ready=()=>{if(image.naturalWidth>0){
+    image.classList.add("ready");
+    image.parentElement?.classList.add("image-ready");
+  }};
   image.addEventListener("load",ready);
   if(image.complete)ready();
 })();
