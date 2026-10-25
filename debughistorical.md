@@ -243,5 +243,5 @@ Une brique occupe une surface très étroite dans les 48 secteurs. En version 0.
 
 ## PT-044 — Le titre CSS ne correspondait plus au nouveau visuel officiel (25/10/2026)
 - Fab fournit un nouveau wordmark transparent PARTOUTETRIS : lettres dorées pyramidales, A architectural et O = Lune bleue. L'ancien titre était fabriqué par `mountMoonWordmark()` (texte + éléments CSS), donc ne pouvait pas respecter exactement la nouvelle charte.
-- Résolution : image officielle locale AVIF avec alpha conservé, suppression des grandes marges transparentes (sans effacer de pixels opaques), taille 700×105, fallback ancien titre CSS uniquement en cas de non-chargement de l'image. Style responsive autonome pour éviter d'étirer/couper le logo.
-- CI et essai téléphone à vérifier.
+- Résolution : image officielle locale WebP avec alpha conservé, suppression des grandes marges transparentes (sans effacer de pixels opaques), taille 700×105, fallback ancien titre CSS uniquement en cas de non-chargement de l'image. Style responsive autonome pour éviter d'étirer/couper le logo.
+- Le premier essai en AVIF s'affichait en titre CSS de secours sur la capture Chrome headless ; remplacé par le WebP transparent plus compatible, puis nouveau contrôle visuel/CI demandé. Essai téléphone à vérifier.
