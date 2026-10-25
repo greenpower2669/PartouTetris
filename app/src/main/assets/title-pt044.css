@@ -1,0 +1,34 @@
+/* PT-044 — Official transparent wordmark supplied by Fab.
+   Preserve the old live CSS title only as a local, offline-safe fallback.
+   Keep the native gold A pyramid and bright blue Moon O from the source. */
+#hud .brand{
+  min-height:76px;
+  height:clamp(76px,9.2vh,86px);
+}
+#hud .brand-copy{
+  inset:22px 5px 3px;
+  display:flex;align-items:center;justify-content:center;
+}
+#hud .brand-wordmark-image{
+  position:absolute;inset:0;display:block;
+  width:100%;height:100%;object-fit:contain;object-position:center center;
+  opacity:0;pointer-events:none;user-select:none;-webkit-user-select:none;
+  -webkit-user-drag:none;
+}
+#hud .brand-wordmark-image.ready{
+  opacity:1;
+  filter:drop-shadow(0 0 4px #21bfff66) drop-shadow(0 2px 2px #000a);
+}
+#hud .brand-copy.image-ready .brand-title{visibility:hidden}
+@media(max-width:360px){
+  #hud .brand{height:74px;min-height:74px}
+  #hud .brand-copy{inset:22px 3px 3px}
+}
+@media(max-height:690px){
+  #hud .brand{height:66px;min-height:66px}
+  #hud .brand-copy{inset:19px 3px 2px}
+}
+@media(max-height:610px){
+  #hud .brand{height:60px;min-height:60px}
+  #hud .brand-copy{inset:17px 3px 2px}
+}
