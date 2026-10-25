@@ -239,3 +239,9 @@ Une brique occupe une surface très étroite dans les 48 secteurs. En version 0.
 - Animation rare de pluie demandée pour casser la monotonie : nouveau contrôleur d'instances `EarthEvents` dans `earth-shower.js`, 3–6 trajectoires indépendantes vers Terre et échelonnées, cible de forme renouvelée, intervalle 45–90 s de jeu entre pluies, 6 cibles max ; retours incendiaires/lasers/comic PT-039/041 conservés. Aucune conséquence physique pour la grille ni nouvelle pénalité. Test réel de performances et d'impact visuel sur Samsung requis.
 - Le ciblage manuel d'un mini-bloc de pluie reprend le verrouillage tri-laser existant et le gain exact appliqué à l'impact. Le gestionnaire plafonne à un tir utilisateur simultané et évite les doubles récompenses. Les événements atmosphériques automatiques restent gratuits en points.
 - CI GitHub Actions #40142339981 **SUCCESS**, 262 tests Node réussis, aucun échec, compilation Android v0.2.30 et APK brute vérifiée (8 842 555 octets). L'unitaire vérifie la logique et le budget de rendu, mais pas l'ergonomie perceptive réelle : essais sur Samsung restant.
+
+
+## PT-044 — Le titre CSS ne correspondait plus au nouveau visuel officiel (25/10/2026)
+- Fab fournit un nouveau wordmark transparent PARTOUTETRIS : lettres dorées pyramidales, A architectural et O = Lune bleue. L'ancien titre était fabriqué par `mountMoonWordmark()` (texte + éléments CSS), donc ne pouvait pas respecter exactement la nouvelle charte.
+- Résolution : image officielle locale AVIF avec alpha conservé, suppression des grandes marges transparentes (sans effacer de pixels opaques), taille 700×105, fallback ancien titre CSS uniquement en cas de non-chargement de l'image. Style responsive autonome pour éviter d'étirer/couper le logo.
+- CI et essai téléphone à vérifier.
