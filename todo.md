@@ -407,8 +407,8 @@
 ## PT-044 — Logo officiel Fab dans le bandeau titre
 - [x] Repartir de la branche `releases` PT-043 avec une branche de travail dédiée.
 - [x] Récupérer le PNG original fourni dans la conversation et découper uniquement les grandes marges transparentes.
-- [x] Ajouter le véritable logo doré avec la Lune bleue dans `app/src/main/assets/partout-title-044.avif` (local et hors connexion).
-- [x] Afficher l'image à la place du titre CSS, avec fallback texte si format AVIF indisponible.
+- [x] Ajouter le véritable logo doré avec la Lune bleue dans `app/src/main/assets/partout-title-044.webp` (local et hors connexion).
+- [x] Afficher l'image à la place du titre CSS, avec fallback texte si le chargement du WebP échoue.
 - [x] Adapter la taille du bandeau et les écrans étroits/petites hauteurs sans masquer les commandes du jeu.
 - [x] Ajouter tests PT-044 ; préparer v0.2.31/versionCode 42.
 - [ ] Confirmer GitHub Actions et l'APK sans ZIP dans `temp/PartouTetris-v0.2.31-official-title-debug.apk`.
