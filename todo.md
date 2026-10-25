@@ -402,3 +402,15 @@
 - [x] GitHub Actions #40142339981 **SUCCESS** : 262/262 tests Node (zéro échec), compilation Gradle Android et APK brute vérifiée `temp/PartouTetris-v0.2.30-meteor-shower-debug.apk` (8 842 555 octets, SHA Git `39a67c0f26d49502a7d537781f34b9d3c65eca3f`). Téléchargement direct : https://raw.githubusercontent.com/greenpower2669/PartouTetris/feature/lunar-four-fronts-comic-meteor-shower-043/temp/PartouTetris-v0.2.30-meteor-shower-debug.apk
 - [ ] Essai Samsung SM-A576B Android 16 : popup centrée et très brève, visibilité Terre lors des pluies, fréquence, laser manuel et cadence générale.
 - [ ] Aucun merge `main` ou Release sans validation explicite de Fab.
+
+
+## PT-044 — Logo officiel Fab dans le bandeau titre
+- [x] Repartir de la branche `releases` PT-043 avec une branche de travail dédiée.
+- [x] Récupérer le PNG original fourni dans la conversation et découper uniquement les grandes marges transparentes.
+- [x] Ajouter le véritable logo doré avec la Lune bleue dans `app/src/main/assets/partout-title-044.webp` (local et hors connexion).
+- [x] Afficher l'image à la place du titre CSS, avec fallback texte si le chargement du WebP échoue.
+- [x] Adapter la taille du bandeau et les écrans étroits/petites hauteurs sans masquer les commandes du jeu.
+- [x] Ajouter tests PT-044 ; préparer v0.2.31/versionCode 42.
+- [x] **GitHub Actions #40146890756 SUCCESS : 265/265 tests Node (zéro échec), build Gradle Android réussi.** APK brute `temp/PartouTetris-v0.2.31-official-title-debug.apk` vérifiée (8 872 182 octets, SHA Git `95e020ece4378f0e24dec77d1d157fd7abf38a33`).
+- [ ] Valider visuellement sur le Samsung la taille du nouveau titre et le positionnement par rapport au niveau/pictogrammes.
+- [ ] Ne pas fusionner `main` sans accord de Fab.

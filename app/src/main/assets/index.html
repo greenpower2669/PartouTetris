@@ -281,6 +281,7 @@ html,body {height:100%;height:100dvh;overscroll-behavior:none}
 <link rel="stylesheet" href="hud-pt016.css">
 <link rel="stylesheet" href="joystick-guide.css">
 <link rel="stylesheet" href="comic-feedback.css">
+<link rel="stylesheet" href="title-pt044.css">
 </head><body>
 <canvas id="screen" aria-label="Lune et quatre secteurs de jeu"></canvas>
 <div id="scoreBurst" aria-hidden="true"></div>
@@ -293,7 +294,7 @@ html,body {height:100%;height:100dvh;overscroll-behavior:none}
       <span class="mino mino-purple"><i></i><i></i><i></i><i></i></span>
       <span class="mino mino-ice"><i></i><i></i><i></i><i></i></span>
     </div>
-    <div class="brand-copy"><strong class="brand-title">PARTOUTETRIS</strong></div>
+    <div class="brand-copy"><strong class="brand-title">PARTOUTETRIS</strong><img id="brandWordmarkImage" class="brand-wordmark-image" src="partout-title-044.webp" alt="PartouTetris" draggable="false" decoding="async"></div>
     <div class="right title-meta"><strong id="level">Niveau 1</strong><small id="rings">Couronnes 0 · 4 fronts</small></div>
   </div>
   <div class="scoreboard">
@@ -406,6 +407,18 @@ function mountMoonWordmark(){
   title.dataset.orbMounted="true";
 }
 mountMoonWordmark();
+// PT-044: replace the old CSS-only wordmark only AFTER this precise,
+// transparent supplied logo successfully loads. Text remains as fallback.
+(function installSuppliedWordmark(){
+  const image=document.getElementById("brandWordmarkImage");
+  if(!image)return;
+  const ready=()=>{if(image.naturalWidth>0){
+    image.classList.add("ready");
+    image.parentElement?.classList.add("image-ready");
+  }};
+  image.addEventListener("load",ready);
+  if(image.complete)ready();
+})();
 
 const ui={score:document.getElementById("scoreTotal"),stats:document.getElementById("stats"),level:document.getElementById("level"),rings:document.getElementById("rings"),alert:document.getElementById("alert"),final:document.getElementById("finalScore"),pause:document.getElementById("pause")};
 const game=new Game(),sound=new window.PartouAudio.Soundtrack();

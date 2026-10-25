@@ -79,17 +79,17 @@ jobs:
         run: gradle :app:assembleDebug --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: PartouTetris-v0.2.30-meteor-shower-debug
+          name: PartouTetris-v0.2.31-official-title-debug
           path: app/build/outputs/apk/debug/app-debug.apk
       - name: Publish uncompressed temporary APK on working branch
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           mkdir -p temp
-          cp app/build/outputs/apk/debug/app-debug.apk temp/PartouTetris-v0.2.30-meteor-shower-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk temp/PartouTetris-v0.2.31-official-title-debug.apk
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add temp/PartouTetris-v0.2.30-meteor-shower-debug.apk design/charte-apercu.jpg
+          git add temp/PartouTetris-v0.2.31-official-title-debug.apk design/charte-apercu.jpg
           if test -f design/rendu-jeu-apercu.jpg; then git add design/rendu-jeu-apercu.jpg; fi
           if ! git diff --cached --quiet; then
             git commit -m "build: temporary installable PartouTetris debug APK [skip ci]"
