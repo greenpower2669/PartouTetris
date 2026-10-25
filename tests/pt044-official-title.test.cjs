@@ -5,12 +5,12 @@ const path=require("node:path");
 const root=path.join(__dirname,"..","app","src","main","assets");
 const html=fs.readFileSync(path.join(root,"index.html"),"utf8");
 const css=fs.readFileSync(path.join(root,"title-pt044.css"),"utf8");
-const logo=fs.readFileSync(path.join(root,"partout-title-044.avif"));
+const logo=fs.readFileSync(path.join(root,"partout-title-044.webp"));
 
-test("PT044: Fab's supplied title is a real, bundled transparent AVIF asset",()=>{
+test("PT044: Fab's supplied title is a real, bundled transparent WebP asset",()=>{
   assert.ok(logo.length>5000,"image must be bundled and contain real artwork");
-  assert.equal(logo.toString("ascii",4,8),"ftyp");
-  assert.equal(logo.toString("ascii",8,12),"avif");
+  assert.equal(logo.toString("ascii",0,4),"RIFF");
+  assert.equal(logo.toString("ascii",8,12),"WEBP");
   assert.match(html,/class="brand-wordmark-image" src="partout-title-044\.avif"/);
   assert.match(html,/alt="PartouTetris"/);
   assert.match(html,/href="title-pt044\.css"/);
